@@ -328,11 +328,14 @@ class ScopaMaresciallo {
         // Controlla se la carta giocata è il maresciallo (10 di spade)
         const cartaIsMaresciallo = carta.valore === 10 && carta.seme === 'spade';
 
+        // Controlla se tra le carte prese c'è un maresciallo
+        const presaContieneMaresciallo = cartePrese.some(c => c.valore === 10 && c.seme === 'spade');
+
         // Caso speciale: scopa maresciallo con maresciallo = 10 punti (e niente penalità)
-        if (cartaIsMaresciallo && verifica.conIdentica) {
+        if (cartaIsMaresciallo && presaContieneMaresciallo) {
           giocatore.scope.push({ carta: carta.id, valore: 10, marescialloConMaresciallo: true });
-        } else if (cartaIsMaresciallo) {
-          // Scopa con maresciallo normale: -4 punti
+        } else if (cartaIsMaresciallo || presaContieneMaresciallo) {
+          // Scopa con maresciallo (giocato O preso): -4 punti
           giocatore.scope.push({ carta: carta.id, valore: -4 });
         } else {
           giocatore.scope.push({ carta: carta.id, valore: valoreScopa });
