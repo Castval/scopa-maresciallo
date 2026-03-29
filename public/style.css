@@ -1,0 +1,371 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a472a 0%, #2d5a3f 100%);
+  min-height: 100vh;
+  color: #fff;
+}
+
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.schermata {
+  display: none;
+}
+
+.schermata.attiva {
+  display: block;
+}
+
+/* Lobby */
+#lobby {
+  text-align: center;
+  padding-top: 50px;
+}
+
+#lobby h1 {
+  font-size: 3em;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.sottotitolo {
+  color: #a8d5a2;
+  margin-bottom: 40px;
+}
+
+.form-gruppo {
+  margin: 20px auto;
+  max-width: 300px;
+}
+
+.form-gruppo label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.form-gruppo input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: center;
+}
+
+#codiceStanza {
+  text-transform: uppercase;
+}
+
+.bottoni-lobby {
+  margin-top: 30px;
+}
+
+.btn-primario, .btn-secondario {
+  padding: 12px 30px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin: 5px;
+}
+
+.btn-primario {
+  background: linear-gradient(135deg, #d4af37 0%, #c5a028 100%);
+  color: #1a472a;
+  font-weight: bold;
+}
+
+.btn-primario:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.btn-secondario {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.btn-secondario:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.divisore {
+  margin: 20px 0;
+  color: #a8d5a2;
+}
+
+.messaggio {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.messaggio.errore {
+  background: rgba(220, 53, 69, 0.8);
+}
+
+.messaggio.successo {
+  background: rgba(40, 167, 69, 0.8);
+}
+
+/* Attesa */
+#attesa {
+  text-align: center;
+  padding-top: 100px;
+}
+
+.codice-stanza {
+  background: rgba(255,255,255,0.1);
+  padding: 20px 40px;
+  border-radius: 12px;
+  display: inline-block;
+  margin: 30px 0;
+}
+
+.codice-stanza strong {
+  font-size: 2.5em;
+  letter-spacing: 5px;
+  color: #d4af37;
+}
+
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  margin: 30px auto;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Gioco */
+#gioco {
+  display: none;
+}
+
+#gioco.attiva {
+  display: block;
+}
+
+.info-partita {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0,0,0,0.3);
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.info-giocatore {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info-giocatore .nome {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.info-giocatore.tu .nome {
+  color: #d4af37;
+}
+
+.info-centro {
+  text-align: center;
+}
+
+#turnoIndicatore {
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.1);
+}
+
+#turnoIndicatore.mio-turno {
+  background: #d4af37;
+  color: #1a472a;
+}
+
+.area-avversario, .area-giocatore {
+  margin: 20px 0;
+}
+
+.area-avversario h3, .area-giocatore h3, .tavolo-container h3 {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #a8d5a2;
+}
+
+.mano-carte {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 150px;
+}
+
+.mano-carte.dorso .carta {
+  background: linear-gradient(135deg, #8b0000 0%, #5c0000 100%);
+}
+
+.mano-carte.dorso .carta::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 2px solid #d4af37;
+  border-radius: 4px;
+}
+
+/* Carte */
+.carta {
+  width: 80px;
+  height: 140px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.carta:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.carta.selezionata {
+  transform: translateY(-15px);
+  box-shadow: 0 12px 25px rgba(212, 175, 55, 0.6);
+  outline: 3px solid #d4af37;
+}
+
+.carta.selezionabile {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+}
+
+/* Evidenzia carte speciali */
+.carta.maresciallo {
+  outline: 2px solid #ff6b6b;
+}
+
+.carta.settebello {
+  outline: 2px solid #d4af37;
+}
+
+/* Tavolo */
+.tavolo-container {
+  background: rgba(0,0,0,0.2);
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+.tavolo {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 150px;
+  padding: 10px;
+}
+
+.tavolo .carta {
+  cursor: pointer;
+}
+
+/* Azioni */
+.azioni-mossa {
+  text-align: center;
+  margin: 20px 0;
+  padding: 15px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+}
+
+.azioni-mossa.nascosto {
+  display: none;
+}
+
+/* Fine Round */
+#fineRound {
+  text-align: center;
+  padding-top: 50px;
+}
+
+.riepilogo-punti {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin: 40px 0;
+}
+
+.colonna-punti {
+  background: rgba(255,255,255,0.1);
+  padding: 30px 50px;
+  border-radius: 12px;
+}
+
+.colonna-punti h3 {
+  margin-bottom: 20px;
+  color: #d4af37;
+}
+
+.colonna-punti p {
+  margin: 10px 0;
+}
+
+.nascosto {
+  display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .carta {
+    width: 55px;
+    height: 96px;
+  }
+
+  .info-partita {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .riepilogo-punti {
+    flex-direction: column;
+    gap: 20px;
+  }
+}

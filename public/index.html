@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scopa Maresciallo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Schermata Lobby -->
+    <div id="lobby" class="schermata attiva">
+      <h1>Scopa Maresciallo</h1>
+      <p class="sottotitolo">Gioco di carte con 80 carte napoletane</p>
+
+      <div class="form-gruppo">
+        <label for="nomeGiocatore">Il tuo nome:</label>
+        <input type="text" id="nomeGiocatore" placeholder="Inserisci il tuo nome" maxlength="20">
+      </div>
+
+      <div class="bottoni-lobby">
+        <button id="btnCreaStanza" class="btn-primario">Crea Stanza</button>
+        <div class="divisore">oppure</div>
+        <div class="form-gruppo">
+          <input type="text" id="codiceStanza" placeholder="Codice stanza" maxlength="6">
+          <button id="btnUnisciti" class="btn-secondario">Unisciti</button>
+        </div>
+      </div>
+
+      <div id="messaggioLobby" class="messaggio"></div>
+    </div>
+
+    <!-- Schermata Attesa -->
+    <div id="attesa" class="schermata">
+      <h2>Stanza creata!</h2>
+      <div class="codice-stanza">
+        <span>Codice:</span>
+        <strong id="codiceStanzaDisplay"></strong>
+      </div>
+      <p>Condividi questo codice con il tuo avversario</p>
+      <div class="loader"></div>
+      <p>In attesa dell'avversario...</p>
+    </div>
+
+    <!-- Schermata Gioco -->
+    <div id="gioco" class="schermata">
+      <div class="info-partita">
+        <div class="info-giocatore avversario">
+          <span class="nome" id="nomeAvversario">Avversario</span>
+          <span class="punti">Punti: <strong id="puntiAvversario">0</strong></span>
+          <span class="carte-info">Carte: <span id="carteAvversario">0</span></span>
+          <span class="prese-info">Prese: <span id="preseAvversario">0</span></span>
+        </div>
+        <div class="info-centro">
+          <span id="turnoIndicatore">Turno avversario</span>
+          <span class="mazzo-info">Mazzo: <span id="carteRimanenti">0</span></span>
+        </div>
+        <div class="info-giocatore tu">
+          <span class="nome" id="nomeGiocatoreDisplay">Tu</span>
+          <span class="punti">Punti: <strong id="puntiGiocatore">0</strong></span>
+          <span class="prese-info">Prese: <span id="preseGiocatore">0</span></span>
+        </div>
+      </div>
+
+      <div class="area-avversario">
+        <div id="manoAvversario" class="mano-carte dorso"></div>
+      </div>
+
+      <div class="tavolo-container">
+        <h3>Tavolo</h3>
+        <div id="tavolo" class="tavolo"></div>
+      </div>
+
+      <div class="area-giocatore">
+        <h3>La tua mano</h3>
+        <div id="manoGiocatore" class="mano-carte"></div>
+      </div>
+
+      <div id="azioniMossa" class="azioni-mossa nascosto">
+        <button id="btnConferma" class="btn-primario">Conferma</button>
+        <button id="btnAnnulla" class="btn-secondario">Annulla</button>
+        <button id="btnPosa" class="btn-secondario">Posa carta</button>
+      </div>
+
+      <div id="messaggioGioco" class="messaggio"></div>
+    </div>
+
+    <!-- Schermata Fine Round -->
+    <div id="fineRound" class="schermata">
+      <h2 id="titoloFineRound">Fine Round</h2>
+      <div class="riepilogo-punti">
+        <div class="colonna-punti">
+          <h3 id="nomeG1">Giocatore 1</h3>
+          <p>Punti round: <strong id="puntiRoundG1">0</strong></p>
+          <p>Totale: <strong id="puntiTotaliG1">0</strong></p>
+        </div>
+        <div class="colonna-punti">
+          <h3 id="nomeG2">Giocatore 2</h3>
+          <p>Punti round: <strong id="puntiRoundG2">0</strong></p>
+          <p>Totale: <strong id="puntiTotaliG2">0</strong></p>
+        </div>
+      </div>
+      <button id="btnProssimoRound" class="btn-primario">Prossimo Round</button>
+      <button id="btnNuovaPartita" class="btn-primario nascosto">Nuova Partita</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
