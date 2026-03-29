@@ -184,8 +184,14 @@ class ScopaMaresciallo {
       combinazioni.push([c]);
     }
 
+    // Se c'è una carta singola dello stesso valore, NON si possono fare somme
+    // (regola: carta singola ha priorità sulla somma)
+    if (carteNonIdentiche.length > 0) {
+      return combinazioni;
+    }
+
     // Cerca combinazioni che sommano al valore della carta
-    // (escluso il caso carta singola già gestito)
+    // (solo se non c'è carta singola prendibile)
     if (carta.valore > 1) {
       const combSomma = this.trovaCombinazoniSomma(tavolo, carta.valore);
       for (const comb of combSomma) {
