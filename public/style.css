@@ -66,6 +66,80 @@ body {
   text-transform: uppercase;
 }
 
+/* Input stanza con dropdown */
+.input-stanza-container {
+  display: flex;
+  gap: 0;
+}
+
+.input-stanza-container input {
+  border-radius: 8px 0 0 8px;
+  flex: 1;
+}
+
+.btn-stanze {
+  background: rgba(255,255,255,0.3);
+  border: none;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 15px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-stanze:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+.lista-stanze {
+  background: #fff;
+  border-radius: 8px;
+  margin-top: 5px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.lista-stanze.nascosto {
+  display: none;
+}
+
+.stanza-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  color: #1a472a;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stanza-item:last-child {
+  border-bottom: none;
+}
+
+.stanza-item:hover {
+  background: #f0f0f0;
+}
+
+.stanza-item .codice {
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 1.1em;
+}
+
+.stanza-item .creatore {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.lista-stanze .nessuna-stanza {
+  padding: 15px;
+  text-align: center;
+  color: #666;
+}
+
 .bottoni-lobby {
   margin-top: 30px;
 }

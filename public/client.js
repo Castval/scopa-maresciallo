@@ -429,6 +429,51 @@ document.getElementById('btnUnisciti').addEventListener('click', () => {
   socket.emit('uniscitiStanza', { codice, nome });
 });
 
+// Mostra stanze disponibili
+document.getElementById('btnMostraStanze').addEventListener('click', () => {
+  socket.emit('richiediStanzeDisponibili');
+});
+
+// Click sull'input mostra anche le stanze
+document.getElementById('codiceStanza').addEventListener('focus', () => {
+  socket.emit('richiediStanzeDisponibili');
+});
+
+// Chiudi lista quando si clicca fuori
+document.addEventListener('click', (e) => {
+  const lista = document.getElementById('listaStanze');
+  const container = document.querySelector('.input-stanza-container');
+  if (!container.contains(e.target) && !lista.contains(e.target)) {
+    lista.classList.add('nascosto');
+  }
+});
+
+// Ricevi stanze disponibili
+socket.on('stanzeDisponibili', (stanze) => {
+  const lista = document.getElementById('listaStanze');
+  lista.innerHTML = '';
+
+  if (stanze.length === 0) {
+    lista.innerHTML = '<div class="nessuna-stanza">Nessuna stanza disponibile</div>';
+  } else {
+    stanze.forEach(stanza => {
+      const item = document.createElement('div');
+      item.className = 'stanza-item';
+      item.innerHTML = `
+        <span class="codice">${stanza.codice}</span>
+        <span class="creatore">di ${stanza.creatore}</span>
+      `;
+      item.addEventListener('click', () => {
+        document.getElementById('codiceStanza').value = stanza.codice;
+        lista.classList.add('nascosto');
+      });
+      lista.appendChild(item);
+    });
+  }
+
+  lista.classList.remove('nascosto');
+});
+
 document.getElementById('btnConferma').addEventListener('click', () => {
   if (!cartaSelezionata) return;
 

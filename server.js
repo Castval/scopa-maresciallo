@@ -29,6 +29,21 @@ function generaCodiceStanza() {
 io.on('connection', (socket) => {
   console.log(`Giocatore connesso: ${socket.id}`);
 
+  // Richiedi stanze disponibili
+  socket.on('richiediStanzeDisponibili', () => {
+    const stanzeDisponibili = [];
+    for (const [codice, partita] of stanze) {
+      // Stanza disponibile se ha solo 1 giocatore
+      if (partita.giocatori.length === 1 && partita.stato === 'attesa') {
+        stanzeDisponibili.push({
+          codice: codice,
+          creatore: partita.giocatori[0].nome
+        });
+      }
+    }
+    socket.emit('stanzeDisponibili', stanzeDisponibili);
+  });
+
   // Crea nuova stanza
   socket.on('creaStanza', (nome) => {
     const codice = generaCodiceStanza();

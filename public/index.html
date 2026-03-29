@@ -22,7 +22,11 @@
         <button id="btnCreaStanza" class="btn-primario">Crea Stanza</button>
         <div class="divisore">oppure</div>
         <div class="form-gruppo">
-          <input type="text" id="codiceStanza" placeholder="Codice stanza" maxlength="6">
+          <div class="input-stanza-container">
+            <input type="text" id="codiceStanza" placeholder="Codice stanza" maxlength="6" autocomplete="off">
+            <button type="button" id="btnMostraStanze" class="btn-stanze" title="Mostra stanze disponibili">▼</button>
+          </div>
+          <div id="listaStanze" class="lista-stanze nascosto"></div>
           <button id="btnUnisciti" class="btn-secondario">Unisciti</button>
         </div>
       </div>
