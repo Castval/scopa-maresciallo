@@ -134,6 +134,62 @@ body {
   background: rgba(40, 167, 69, 0.8);
 }
 
+/* Sezione Regole */
+.sezione-regole {
+  margin-top: 40px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sezione-regole h3 {
+  text-align: center;
+  color: #d4af37;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.sezione-regole h3::after {
+  content: ' ▼';
+  font-size: 0.7em;
+}
+
+.sezione-regole.chiusa h3::after {
+  content: ' ▶';
+}
+
+.sezione-regole.chiusa .regole-contenuto {
+  display: none;
+}
+
+.regole-contenuto {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.regole-contenuto h4 {
+  color: #a8d5a2;
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+.regole-contenuto ul {
+  margin-left: 20px;
+  margin-bottom: 10px;
+}
+
+.regole-contenuto li {
+  margin-bottom: 5px;
+}
+
+.regole-contenuto p {
+  margin-bottom: 8px;
+}
+
 /* Attesa */
 #attesa {
   text-align: center;
@@ -398,6 +454,55 @@ body {
   margin: 10px 0;
 }
 
+/* Mini carte nel riepilogo */
+.carte-cell {
+  padding-left: 10px;
+  text-align: left;
+}
+
+.mini-carte {
+  display: inline-flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mini-carta {
+  width: 28px;
+  height: 42px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: inline-block;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.mini-carta img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-carta.con-punti {
+  position: relative;
+}
+
+.mini-carta .punti-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #d4af37;
+  color: #1a472a;
+  font-size: 8px;
+  font-weight: bold;
+  padding: 1px 3px;
+  border-radius: 6px;
+}
+
+.conteggio-carte {
+  font-size: 0.85em;
+  color: #a8d5a2;
+}
+
 .nascosto {
   display: none !important;
 }
@@ -437,6 +542,135 @@ body {
   }
 }
 
+/* Area avversario con prese */
+.area-avversario-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+.area-avversario-container .area-avversario {
+  flex: 1;
+  margin: 0;
+}
+
+.area-avversario-container .area-prese {
+  min-width: 120px;
+  text-align: center;
+}
+
+.area-avversario-container .area-prese h4 {
+  color: #ff9999;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+}
+
+/* Area giocatore con prese */
+.area-giocatore-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 30px;
+  margin: 20px 0;
+}
+
+.area-giocatore {
+  flex: 1;
+  margin: 0;
+}
+
+.area-prese {
+  min-width: 120px;
+  text-align: center;
+}
+
+.area-prese h4 {
+  color: #a8d5a2;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+}
+
+/* Mazzo delle prese */
+.mazzo-prese {
+  position: relative;
+  width: 90px;
+  height: 160px;
+  margin: 0 auto;
+}
+
+.mazzo-prese .carta-presa {
+  position: absolute;
+  width: 70px;
+  height: 120px;
+  background: linear-gradient(135deg, #8b0000 0%, #5c0000 100%);
+  border-radius: 6px;
+  box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+  cursor: default;
+}
+
+.mazzo-prese .carta-presa::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 1.5px solid #d4af37;
+  border-radius: 3px;
+}
+
+/* Carta scopa - ruotata di traverso */
+.mazzo-prese .carta-scopa {
+  position: absolute;
+  width: 70px;
+  height: 120px;
+  border-radius: 6px;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+  cursor: default;
+  transform: rotate(90deg);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.mazzo-prese .carta-scopa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* Indicatore punti scopa */
+.mazzo-prese .scopa-punti {
+  position: absolute;
+  bottom: -8px;
+  left: -12px;
+  background: #d4af37;
+  color: #1a472a;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 10px;
+  z-index: 100;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.mazzo-prese .scopa-punti.negativo {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+.mazzo-prese .scopa-punti.super {
+  background: #4ade80;
+  color: #1a472a;
+}
+
+/* Contatore prese */
+.contatore-prese {
+  margin-top: 10px;
+  font-size: 0.85em;
+  color: #a8d5a2;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .carta {
@@ -452,5 +686,31 @@ body {
   .riepilogo-punti {
     flex-direction: column;
     gap: 20px;
+  }
+
+  .area-giocatore-container,
+  .area-avversario-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .area-prese {
+    order: 2;
+    margin-top: 20px;
+  }
+
+  .area-avversario-container .area-prese {
+    order: 2;
+  }
+
+  .mazzo-prese {
+    width: 70px;
+    height: 130px;
+  }
+
+  .mazzo-prese .carta-presa,
+  .mazzo-prese .carta-scopa {
+    width: 55px;
+    height: 96px;
   }
 }

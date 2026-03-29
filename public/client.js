@@ -193,6 +193,9 @@ function renderizzaGioco() {
     manoAvversario.appendChild(carta);
   }
 
+  // Mazzo prese avversario
+  renderizzaMazzoPreseAvversario();
+
   // Tavolo
   const tavolo = document.getElementById('tavolo');
   tavolo.innerHTML = '';
@@ -207,12 +210,158 @@ function renderizzaGioco() {
     manoGiocatore.appendChild(creaCarta(carta, true));
   }
 
+  // Mazzo prese con scope
+  renderizzaMazzoPrese();
+
   // Reset selezione
   cartaSelezionata = null;
   carteSelezionateTavolo = [];
   combinazioniDisponibili = [];
   puoiPosare = false;
   document.getElementById('azioniMossa').classList.add('nascosto');
+}
+
+// Renderizza il mazzo delle prese con scope di traverso
+function renderizzaMazzoPrese() {
+  const mazzoPrese = document.getElementById('mazzoPrese');
+  mazzoPrese.innerHTML = '';
+
+  if (!statoGioco) return;
+
+  const numPrese = statoGioco.preseGiocatore;
+  const scope = statoGioco.scopeGiocatore || [];
+
+  // Se non ci sono prese, non mostrare nulla
+  if (numPrese === 0 && scope.length === 0) {
+    return;
+  }
+
+  // Calcola quante carte "normali" mostrare (simulazione del mazzetto)
+  // Mostriamo fino a 5 carte impilate per dare l'idea del mazzo
+  const carteNormaliDaMostrare = Math.min(5, Math.max(1, numPrese - scope.length));
+
+  // Renderizza le carte normali (dorso) impilate
+  for (let i = 0; i < carteNormaliDaMostrare; i++) {
+    const cartaPresa = document.createElement('div');
+    cartaPresa.className = 'carta-presa';
+    cartaPresa.style.top = (i * 2) + 'px';
+    cartaPresa.style.left = (i * 1) + 'px';
+    cartaPresa.style.zIndex = i;
+    mazzoPrese.appendChild(cartaPresa);
+  }
+
+  // Renderizza le scope di traverso
+  scope.forEach((scopa, idx) => {
+    // Parse carta ID per ottenere valore e seme
+    // formato: "7_denari_0"
+    const parti = scopa.carta.split('_');
+    const valore = parseInt(parti[0]);
+    const seme = parti[1];
+
+    const cartaScopa = document.createElement('div');
+    cartaScopa.className = 'carta-scopa';
+
+    // Posiziona le scope in modo che sporgano dal mazzo
+    const baseTop = (carteNormaliDaMostrare * 2) + 10;
+    cartaScopa.style.top = (baseTop + idx * 30) + 'px';
+    cartaScopa.style.left = '-15px';
+
+    // Aggiungi immagine della carta
+    const imgSrc = getImmagineCarta(valore, seme);
+    cartaScopa.innerHTML = `<img src="${imgSrc}" alt="${valore} di ${seme}">`;
+
+    // Aggiungi indicatore punti
+    const puntiDiv = document.createElement('div');
+    puntiDiv.className = 'scopa-punti';
+
+    if (scopa.valore === 10) {
+      puntiDiv.textContent = '+10';
+      puntiDiv.classList.add('super');
+    } else if (scopa.valore < 0) {
+      puntiDiv.textContent = scopa.valore;
+      puntiDiv.classList.add('negativo');
+    } else {
+      puntiDiv.textContent = '+' + scopa.valore;
+    }
+
+    cartaScopa.appendChild(puntiDiv);
+    mazzoPrese.appendChild(cartaScopa);
+  });
+
+  // Aggiungi contatore
+  const contatore = document.createElement('div');
+  contatore.className = 'contatore-prese';
+  contatore.textContent = `${numPrese} carte`;
+  mazzoPrese.appendChild(contatore);
+}
+
+// Renderizza il mazzo delle prese dell'avversario
+function renderizzaMazzoPreseAvversario() {
+  const mazzoPrese = document.getElementById('mazzoPreseAvversario');
+  mazzoPrese.innerHTML = '';
+
+  if (!statoGioco) return;
+
+  const numPrese = statoGioco.preseAvversario;
+  const scope = statoGioco.scopeAvversario || [];
+
+  // Se non ci sono prese, non mostrare nulla
+  if (numPrese === 0 && scope.length === 0) {
+    return;
+  }
+
+  // Calcola quante carte "normali" mostrare
+  const carteNormaliDaMostrare = Math.min(5, Math.max(1, numPrese - scope.length));
+
+  // Renderizza le carte normali (dorso) impilate
+  for (let i = 0; i < carteNormaliDaMostrare; i++) {
+    const cartaPresa = document.createElement('div');
+    cartaPresa.className = 'carta-presa';
+    cartaPresa.style.top = (i * 2) + 'px';
+    cartaPresa.style.left = (i * 1) + 'px';
+    cartaPresa.style.zIndex = i;
+    mazzoPrese.appendChild(cartaPresa);
+  }
+
+  // Renderizza le scope di traverso
+  scope.forEach((scopa, idx) => {
+    const parti = scopa.carta.split('_');
+    const valore = parseInt(parti[0]);
+    const seme = parti[1];
+
+    const cartaScopa = document.createElement('div');
+    cartaScopa.className = 'carta-scopa';
+
+    const baseTop = (carteNormaliDaMostrare * 2) + 10;
+    cartaScopa.style.top = (baseTop + idx * 30) + 'px';
+    cartaScopa.style.left = '-15px';
+
+    const imgSrc = getImmagineCarta(valore, seme);
+    cartaScopa.innerHTML = `<img src="${imgSrc}" alt="${valore} di ${seme}">`;
+
+    // Indicatore punti
+    const puntiDiv = document.createElement('div');
+    puntiDiv.className = 'scopa-punti';
+
+    if (scopa.valore === 10) {
+      puntiDiv.textContent = '+10';
+      puntiDiv.classList.add('super');
+    } else if (scopa.valore < 0) {
+      puntiDiv.textContent = scopa.valore;
+      puntiDiv.classList.add('negativo');
+    } else {
+      puntiDiv.textContent = '+' + scopa.valore;
+    }
+
+    cartaScopa.appendChild(puntiDiv);
+    mazzoPrese.appendChild(cartaScopa);
+  });
+
+  // Contatore
+  const contatore = document.createElement('div');
+  contatore.className = 'contatore-prese';
+  contatore.textContent = `${numPrese} carte`;
+  mazzoPrese.appendChild(contatore);
 }
 
 // Mostra messaggio
@@ -231,6 +380,11 @@ function mostraMessaggio(testo, tipo = '') {
     msg.className = 'messaggio';
   }, 3000);
 }
+
+// Toggle regole
+document.querySelector('.sezione-regole h3')?.addEventListener('click', () => {
+  document.querySelector('.sezione-regole').classList.toggle('chiusa');
+});
 
 // Event listeners
 document.getElementById('btnCreaStanza').addEventListener('click', () => {
@@ -439,6 +593,10 @@ socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversar
   document.getElementById('puntiRoundG1').textContent = dettagliGiocatore.totale;
   document.getElementById('puntiTotaliG1').textContent = statoGioco.puntiGiocatore;
 
+  // Mini carte G1 (solo scope e primiera)
+  renderizzaMiniCarte('carteScopeG1', dettagliGiocatore.carteScope, true);
+  renderizzaMiniCarte('cartePrimieraG1', dettagliGiocatore.cartePrimiera);
+
   // Dettagli avversario (G2)
   document.getElementById('scopeG2').textContent = dettagliAvversario.scope;
   document.getElementById('denariG2').textContent = dettagliAvversario.denari;
@@ -451,8 +609,41 @@ socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversar
   document.getElementById('puntiRoundG2').textContent = dettagliAvversario.totale;
   document.getElementById('puntiTotaliG2').textContent = statoGioco.puntiAvversario;
 
+  // Mini carte G2 (solo scope e primiera)
+  renderizzaMiniCarte('carteScopeG2', dettagliAvversario.carteScope, true);
+  renderizzaMiniCarte('cartePrimieraG2', dettagliAvversario.cartePrimiera);
+
   mostraSchermata('fineRound');
 });
+
+// Renderizza mini carte nel riepilogo
+function renderizzaMiniCarte(elementId, carte, mostraPunti = false) {
+  const container = document.getElementById(elementId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!carte || carte.length === 0) return;
+
+  for (const carta of carte) {
+    const div = document.createElement('div');
+    div.className = 'mini-carta';
+    if (mostraPunti && carta.punti) {
+      div.classList.add('con-punti');
+    }
+
+    const imgSrc = getImmagineCarta(carta.valore, carta.seme);
+    div.innerHTML = `<img src="${imgSrc}" alt="${carta.valore} di ${carta.seme}">`;
+
+    if (mostraPunti && carta.punti) {
+      const badge = document.createElement('span');
+      badge.className = 'punti-badge';
+      badge.textContent = '+' + carta.punti;
+      div.appendChild(badge);
+    }
+
+    container.appendChild(div);
+  }
+}
 
 socket.on('avversarioDisconnesso', () => {
   mostraMessaggio('L\'avversario si è disconnesso', 'errore');

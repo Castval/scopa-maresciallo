@@ -180,6 +180,12 @@ class ScopaMaresciallo {
     // Altrimenti possiamo prendere carte dello stesso valore ma seme diverso
     const carteNonIdentiche = carteSingolaValore.filter(c => c.seme !== carta.seme);
 
+    // Se c'è solo una carta identica sul tavolo, è scopa (3 punti)
+    if (carteIdentiche.length > 0 && tavolo.length === 1) {
+      combinazioni.push([carteIdentiche[0]]);
+      return combinazioni;
+    }
+
     for (const c of carteNonIdentiche) {
       combinazioni.push([c]);
     }
@@ -247,12 +253,11 @@ class ScopaMaresciallo {
         // Asso con tavolo vuoto: va nelle prese, non è scopa
         return { valida: true, tipo: 'presa', scopa: false, assoSolo: true };
       }
-      // Asso con carte a terra: prende tutto, è scopa
+      // Asso con carte a terra: prende tutto, ma NON è scopa
       if (cartePresa.length !== this.tavolo.length) {
         return { valida: false, errore: 'L\'asso deve prendere tutte le carte' };
       }
-      const presaConIdentica = cartePresa.some(c => c.seme === carta.seme && c.valore === carta.valore);
-      return { valida: true, tipo: 'presa', scopa: true, conIdentica: presaConIdentica };
+      return { valida: true, tipo: 'presa', scopa: false };
     }
 
     // Se non prende niente, deve posare
@@ -320,10 +325,13 @@ class ScopaMaresciallo {
         // Scopa con carta identica vale 3, altrimenti 1
         let valoreScopa = verifica.conIdentica ? 3 : 1;
 
+        // Controlla se la carta giocata è il maresciallo (10 di spade)
+        const cartaIsMaresciallo = carta.valore === 10 && carta.seme === 'spade';
+
         // Caso speciale: scopa maresciallo con maresciallo = 10 punti (e niente penalità)
-        if (carta.isMaresciallo() && verifica.conIdentica) {
+        if (cartaIsMaresciallo && verifica.conIdentica) {
           giocatore.scope.push({ carta: carta.id, valore: 10, marescialloConMaresciallo: true });
-        } else if (carta.isMaresciallo()) {
+        } else if (cartaIsMaresciallo) {
           // Scopa con maresciallo normale: -4 punti
           giocatore.scope.push({ carta: carta.id, valore: -4 });
         } else {
@@ -399,7 +407,7 @@ class ScopaMaresciallo {
     // Marescialli (-1 punto per ogni maresciallo preso)
     // Eccezione: se scopa maresciallo con maresciallo, nessuna penalità
     for (const g of this.giocatori) {
-      const marescialli = g.prese.filter(c => c.isMaresciallo()).length;
+      const marescialli = g.prese.filter(c => c.valore === 10 && c.seme === 'spade').length;
       // Marescialli già contati nelle scope (sia -4 che +10)
       const marescialliScopaNegativa = g.scope.filter(s => s.valore === -4).length;
       const marescialliScopaPositiva = g.scope.filter(s => s.marescialloConMaresciallo).length * 2; // Prende 2 marescialli
@@ -419,14 +427,14 @@ class ScopaMaresciallo {
 
     // Settebello (può valere 2 volte)
     for (const g of this.giocatori) {
-      const settebelli = g.prese.filter(c => c.isSettebello()).length;
+      const settebelli = g.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
       punti[g.id] += settebelli;
     }
 
     // Otto di denari (1 punto per ogni 8 di denari se si ha anche il settebello)
     for (const g of this.giocatori) {
-      const settebelli = g.prese.filter(c => c.isSettebello()).length;
-      const ottoDenari = g.prese.filter(c => c.isOttoDenari()).length;
+      const settebelli = g.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
+      const ottoDenari = g.prese.filter(c => c.valore === 8 && c.seme === 'denari').length;
       // Il bonus è il minimo tra settebelli e otto di denari
       punti[g.id] += Math.min(settebelli, ottoDenari);
     }
@@ -451,39 +459,61 @@ class ScopaMaresciallo {
     const g2 = this.giocatori[1];
 
     for (const g of this.giocatori) {
-      // Calcola scope (somma dei valori)
+      // Calcola scope (solo valori positivi: +1, +3, +10)
       let scopePunti = 0;
+      const carteScope = [];
       for (const scopa of g.scope) {
-        scopePunti += scopa.valore;
+        if (scopa.valore > 0) {
+          scopePunti += scopa.valore;
+          // Estrai info carta dalla stringa id "valore_seme_mazzoId"
+          const parti = scopa.carta.split('_');
+          carteScope.push({ valore: parseInt(parti[0]), seme: parti[1], punti: scopa.valore });
+        }
       }
 
-      // Marescialli
-      const marescialli = g.prese.filter(c => c.isMaresciallo()).length;
-      const marescialliScopaNegativa = g.scope.filter(s => s.valore === -4).length;
+      // Marescialli: conta la penalità totale
+      const carteMarescialli = g.prese.filter(c => c.valore === 10 && c.seme === 'spade');
+      const marescialli = carteMarescialli.length;
+      const scopeMarescialloNegative = g.scope.filter(s => s.valore === -4).length;
       const marescialliScopaPositiva = g.scope.filter(s => s.marescialloConMaresciallo).length * 2;
-      const marescialliPenalita = Math.max(0, marescialli - marescialliScopaNegativa - marescialliScopaPositiva);
+      const marescialliNormali = Math.max(0, marescialli - scopeMarescialloNegative - marescialliScopaPositiva);
+      const penalitaTotale = marescialliNormali + (scopeMarescialloNegative * 4);
 
       // Settebello
-      const settebelli = g.prese.filter(c => c.isSettebello()).length;
+      const carteSettebello = g.prese.filter(c => c.valore === 7 && c.seme === 'denari');
+      const settebelli = carteSettebello.length;
 
-      // Otto di denari (bonus se si ha anche settebello)
-      const ottoDenari = g.prese.filter(c => c.isOttoDenari()).length;
+      // Otto di denari
+      const carteOttoDenari = g.prese.filter(c => c.valore === 8 && c.seme === 'denari');
+      const ottoDenari = carteOttoDenari.length;
       const bonusOtto = Math.min(settebelli, ottoDenari);
 
       // Napola
       const napolaPunti = this.calcolaNapola(g.prese);
+      const carteNapola = this.getCarteNapola(g.prese);
+
+      // Carte primiera
+      const cartePrimiera = this.getCartePrimiera(g.prese);
 
       dettagli[g.id] = {
         nome: g.nome,
         scope: scopePunti,
         numScope: g.scope.length,
-        marescialli: -marescialliPenalita,
+        carteScope: carteScope,
+        marescialli: -penalitaTotale,
+        carteMarescialli: carteMarescialli.map(c => ({ valore: c.valore, seme: c.seme })),
         settebello: settebelli,
+        carteSettebello: carteSettebello.map(c => ({ valore: c.valore, seme: c.seme })),
         ottoDenari: bonusOtto,
+        carteOttoDenari: carteOttoDenari.slice(0, bonusOtto).map(c => ({ valore: c.valore, seme: c.seme })),
         napola: napolaPunti,
+        carteNapola: carteNapola,
         denari: 0,
+        numDenari: g.prese.filter(c => c.seme === 'denari').length,
         carte: 0,
+        numCarte: g.prese.length,
         primiera: 0,
+        cartePrimiera: cartePrimiera,
         totale: 0
       };
     }
@@ -511,6 +541,59 @@ class ScopaMaresciallo {
     }
 
     return dettagli;
+  }
+
+  // Ottiene le carte che formano la napola
+  getCarteNapola(carte) {
+    const denari = carte.filter(c => c.seme === 'denari');
+    const carteNapola = [];
+
+    // Conta le carte per valore
+    const conteggio = {};
+    for (const c of denari) {
+      conteggio[c.valore] = (conteggio[c.valore] || 0) + 1;
+    }
+
+    // Verifica se c'è napola (1,2,3 di denari)
+    if ((conteggio[1] || 0) >= 1 && (conteggio[2] || 0) >= 1 && (conteggio[3] || 0) >= 1) {
+      // Trova fino a dove arriva la napola
+      let maxValore = 3;
+      for (let v = 4; v <= 10; v++) {
+        if ((conteggio[v] || 0) >= 1) {
+          maxValore = v;
+        } else {
+          break;
+        }
+      }
+
+      // Aggiungi le carte della napola
+      for (let v = 1; v <= maxValore; v++) {
+        carteNapola.push({ valore: v, seme: 'denari' });
+      }
+    }
+
+    return carteNapola;
+  }
+
+  // Ottiene le carte migliori per la primiera
+  getCartePrimiera(carte) {
+    const cartePrimiera = [];
+
+    for (const seme of SEMI) {
+      const carteSeme = carte.filter(c => c.seme === seme);
+      if (carteSeme.length > 0) {
+        // Trova la carta con il valore primiera più alto
+        let migliore = carteSeme[0];
+        for (const c of carteSeme) {
+          if (PRIMIERA_VALORI[c.valore] > PRIMIERA_VALORI[migliore.valore]) {
+            migliore = c;
+          }
+        }
+        cartePrimiera.push({ valore: migliore.valore, seme: migliore.seme });
+      }
+    }
+
+    return cartePrimiera;
   }
 
   calcolaPrimiera(carte) {
@@ -587,7 +670,7 @@ class ScopaMaresciallo {
       preseGiocatore: giocatore ? giocatore.prese.length : 0,
       preseAvversario: avversario ? avversario.prese.length : 0,
       scopeGiocatore: giocatore ? giocatore.scope : [],
-      scopeAvversario: avversario ? avversario.scope.length : 0,
+      scopeAvversario: avversario ? avversario.scope : [],
       puntiGiocatore: giocatore ? giocatore.puntiTotali : 0,
       puntiAvversario: avversario ? avversario.puntiTotali : 0,
       nomeGiocatore: giocatore ? giocatore.nome : '',

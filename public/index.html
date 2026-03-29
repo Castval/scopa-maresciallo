@@ -28,6 +28,36 @@
       </div>
 
       <div id="messaggioLobby" class="messaggio"></div>
+
+      <div class="sezione-regole">
+        <h3>Regole</h3>
+        <div class="regole-contenuto">
+          <p><strong>Mazzo:</strong> 80 carte (2 mazzi napoletani)</p>
+          <p><strong>Distribuzione:</strong> 5 carte a testa, nessuna carta iniziale al tavolo</p>
+
+          <h4>Prese</h4>
+          <ul>
+            <li>L'asso prende tutto (va nelle prese anche se il tavolo è vuoto)</li>
+            <li>Se c'è una carta singola dello stesso valore, devi prenderla (no somme)</li>
+            <li>Non puoi prendere una carta identica (stesso seme e valore) tranne per fare scopa</li>
+          </ul>
+
+          <h4>Punteggi</h4>
+          <ul>
+            <li><strong>Scopa:</strong> 1 punto (3 punti se fatta con carta identica)</li>
+            <li><strong>Maresciallo (10 di spade):</strong> -1 punto se preso, -4 se ci fai scopa</li>
+            <li><strong>Scopa maresciallo con maresciallo:</strong> +10 punti</li>
+            <li><strong>Settebello (7 di denari):</strong> 1 punto (max 2)</li>
+            <li><strong>Otto di denari:</strong> 1 punto se hai anche il settebello (max 2)</li>
+            <li><strong>Più carte di denari:</strong> 1 punto</li>
+            <li><strong>Più carte totali:</strong> 1 punto</li>
+            <li><strong>Primiera:</strong> 1 punto</li>
+            <li><strong>Napola (1,2,3 di denari):</strong> 3 punti + 1 per ogni carta successiva fino al 10 (max 2 napole)</li>
+          </ul>
+
+          <p><strong>Vittoria:</strong> 31 punti</p>
+        </div>
+      </div>
     </div>
 
     <!-- Schermata Attesa -->
@@ -60,8 +90,14 @@
         </div>
       </div>
 
-      <div class="area-avversario">
-        <div id="manoAvversario" class="mano-carte dorso"></div>
+      <div class="area-avversario-container">
+        <div class="area-avversario">
+          <div id="manoAvversario" class="mano-carte dorso"></div>
+        </div>
+        <div class="area-prese avversario">
+          <h4>Prese avversario</h4>
+          <div id="mazzoPreseAvversario" class="mazzo-prese"></div>
+        </div>
       </div>
 
       <div class="tavolo-container">
@@ -69,9 +105,15 @@
         <div id="tavolo" class="tavolo"></div>
       </div>
 
-      <div class="area-giocatore">
-        <h3>La tua mano</h3>
-        <div id="manoGiocatore" class="mano-carte"></div>
+      <div class="area-giocatore-container">
+        <div class="area-prese">
+          <h4>Le tue prese</h4>
+          <div id="mazzoPrese" class="mazzo-prese"></div>
+        </div>
+        <div class="area-giocatore">
+          <h3>La tua mano</h3>
+          <div id="manoGiocatore" class="mano-carte"></div>
+        </div>
       </div>
 
       <div id="azioniMossa" class="azioni-mossa nascosto">
@@ -90,30 +132,30 @@
         <div class="colonna-punti">
           <h3 id="nomeG1">Giocatore 1</h3>
           <table class="tabella-punti">
-            <tr><td>Scope</td><td id="scopeG1">0</td></tr>
-            <tr><td>Denari</td><td id="denariG1">0</td></tr>
-            <tr><td>Carte</td><td id="carteG1">0</td></tr>
-            <tr><td>Primiera</td><td id="primieraG1">0</td></tr>
-            <tr><td>Settebello</td><td id="settebelloG1">0</td></tr>
-            <tr><td>Otto denari</td><td id="ottoG1">0</td></tr>
-            <tr><td>Napola</td><td id="napolaG1">0</td></tr>
-            <tr><td>Marescialli</td><td id="marescialliG1">0</td></tr>
-            <tr class="riga-totale"><td>Totale round</td><td id="puntiRoundG1">0</td></tr>
+            <tr><td>Scope</td><td id="scopeG1">0</td><td class="carte-cell"><span id="carteScopeG1" class="mini-carte"></span></td></tr>
+            <tr><td>Denari</td><td id="denariG1">0</td><td></td></tr>
+            <tr><td>Carte</td><td id="carteG1">0</td><td></td></tr>
+            <tr><td>Primiera</td><td id="primieraG1">0</td><td class="carte-cell"><span id="cartePrimieraG1" class="mini-carte"></span></td></tr>
+            <tr><td>Settebello</td><td id="settebelloG1">0</td><td></td></tr>
+            <tr><td>Otto denari</td><td id="ottoG1">0</td><td></td></tr>
+            <tr><td>Napola</td><td id="napolaG1">0</td><td></td></tr>
+            <tr><td>Marescialli</td><td id="marescialliG1">0</td><td></td></tr>
+            <tr class="riga-totale"><td>Totale round</td><td id="puntiRoundG1">0</td><td></td></tr>
           </table>
           <p class="punti-totali">Punteggio: <strong id="puntiTotaliG1">0</strong></p>
         </div>
         <div class="colonna-punti">
           <h3 id="nomeG2">Giocatore 2</h3>
           <table class="tabella-punti">
-            <tr><td>Scope</td><td id="scopeG2">0</td></tr>
-            <tr><td>Denari</td><td id="denariG2">0</td></tr>
-            <tr><td>Carte</td><td id="carteG2">0</td></tr>
-            <tr><td>Primiera</td><td id="primieraG2">0</td></tr>
-            <tr><td>Settebello</td><td id="settebelloG2">0</td></tr>
-            <tr><td>Otto denari</td><td id="ottoG2">0</td></tr>
-            <tr><td>Napola</td><td id="napolaG2">0</td></tr>
-            <tr><td>Marescialli</td><td id="marescialliG2">0</td></tr>
-            <tr class="riga-totale"><td>Totale round</td><td id="puntiRoundG2">0</td></tr>
+            <tr><td>Scope</td><td id="scopeG2">0</td><td class="carte-cell"><span id="carteScopeG2" class="mini-carte"></span></td></tr>
+            <tr><td>Denari</td><td id="denariG2">0</td><td></td></tr>
+            <tr><td>Carte</td><td id="carteG2">0</td><td></td></tr>
+            <tr><td>Primiera</td><td id="primieraG2">0</td><td class="carte-cell"><span id="cartePrimieraG2" class="mini-carte"></span></td></tr>
+            <tr><td>Settebello</td><td id="settebelloG2">0</td><td></td></tr>
+            <tr><td>Otto denari</td><td id="ottoG2">0</td><td></td></tr>
+            <tr><td>Napola</td><td id="napolaG2">0</td><td></td></tr>
+            <tr><td>Marescialli</td><td id="marescialliG2">0</td><td></td></tr>
+            <tr class="riga-totale"><td>Totale round</td><td id="puntiRoundG2">0</td><td></td></tr>
           </table>
           <p class="punti-totali">Punteggio: <strong id="puntiTotaliG2">0</strong></p>
         </div>
