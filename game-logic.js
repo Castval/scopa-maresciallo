@@ -376,11 +376,33 @@ class ScopaMaresciallo {
     }
 
     // Controlla vittoria
-    const vincitore = this.giocatori.find(g => g.puntiTotali >= this.puntiVittoria);
+    const g1 = this.giocatori[0];
+    const g2 = this.giocatori[1];
 
-    if (vincitore) {
-      this.stato = 'finePartita';
-      return { finePartita: true, vincitore: vincitore.id, puntiRound };
+    const g1Vince = g1.puntiTotali >= this.puntiVittoria;
+    const g2Vince = g2.puntiTotali >= this.puntiVittoria;
+
+    if (g1Vince || g2Vince) {
+      // Se entrambi hanno raggiunto 31, vince chi ha più punti
+      // Se sono pari, si continua a giocare
+      if (g1Vince && g2Vince) {
+        if (g1.puntiTotali > g2.puntiTotali) {
+          this.stato = 'finePartita';
+          return { finePartita: true, vincitore: g1.id, puntiRound };
+        } else if (g2.puntiTotali > g1.puntiTotali) {
+          this.stato = 'finePartita';
+          return { finePartita: true, vincitore: g2.id, puntiRound };
+        } else {
+          // Pareggio a 31 o più: si continua a giocare
+          this.stato = 'fineRound';
+          return { finePartita: false, puntiRound, pareggio: true };
+        }
+      } else {
+        // Solo uno ha raggiunto 31
+        const vincitore = g1Vince ? g1 : g2;
+        this.stato = 'finePartita';
+        return { finePartita: true, vincitore: vincitore.id, puntiRound };
+      }
     }
 
     this.stato = 'fineRound';

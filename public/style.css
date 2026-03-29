@@ -134,6 +134,17 @@ body {
   background: rgba(40, 167, 69, 0.8);
 }
 
+/* Messaggio durante il gioco - centrato e sopra tutto */
+#messaggioGioco {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  font-size: 1.2em;
+  padding: 15px 30px;
+}
+
 /* Sezione Regole */
 .sezione-regole {
   margin-top: 40px;
@@ -629,7 +640,7 @@ body {
   cursor: default;
   transform: rotate(90deg);
   z-index: 50;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .mazzo-prese .carta-scopa img {
@@ -642,16 +653,18 @@ body {
 /* Indicatore punti scopa */
 .mazzo-prese .scopa-punti {
   position: absolute;
-  bottom: -8px;
-  left: -12px;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-90deg);
   background: #d4af37;
   color: #1a472a;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: bold;
-  padding: 3px 6px;
-  border-radius: 10px;
-  z-index: 100;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  padding: 4px 8px;
+  border-radius: 8px;
+  z-index: 200;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  white-space: nowrap;
 }
 
 .mazzo-prese .scopa-punti.negativo {

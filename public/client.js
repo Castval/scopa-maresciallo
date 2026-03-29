@@ -559,7 +559,7 @@ socket.on('mossaNonValida', (errore) => {
   mostraMessaggio(errore, 'errore');
 });
 
-socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversario, finePartita, vincitore }) => {
+socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversario, finePartita, vincitore, pareggio }) => {
   statoGioco = stato;
 
   const titoloEl = document.getElementById('titoloFineRound');
@@ -571,6 +571,10 @@ socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversar
       'Hai vinto!' : `${vincitore} ha vinto!`;
     btnProssimo.classList.add('nascosto');
     btnNuova.classList.remove('nascosto');
+  } else if (pareggio) {
+    titoloEl.textContent = 'Pareggio! Si continua...';
+    btnProssimo.classList.remove('nascosto');
+    btnNuova.classList.add('nascosto');
   } else {
     titoloEl.textContent = 'Fine Smazzata';
     btnProssimo.classList.remove('nascosto');
