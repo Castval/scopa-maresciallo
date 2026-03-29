@@ -93,6 +93,15 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Trova la carta giocata prima di eseguire la mossa
+    const giocatore = partita.giocatori.find(g => g.id === socket.id);
+    const cartaGiocata = giocatore?.mano.find(c => c.id === cartaId);
+    const cartaInfo = cartaGiocata ? {
+      valore: cartaGiocata.valore,
+      seme: cartaGiocata.seme,
+      id: cartaGiocata.id
+    } : null;
+
     const risultato = partita.eseguiMossa(socket.id, cartaId, cartePresaIds || []);
 
     if (!risultato.valida) {
@@ -111,13 +120,19 @@ io.on('connection', (socket) => {
           puntiRound,
           finePartita: partita.stato === 'finePartita',
           vincitore: partita.stato === 'finePartita' ?
-            partita.giocatori.find(p => p.puntiTotali >= partita.puntiVittoria)?.nome : null
+            partita.giocatori.find(p => p.puntiTotali >= partita.puntiVittoria)?.nome : null,
+          cartaGiocata: cartaInfo,
+          giocatoreId: socket.id
         });
       }
     } else {
       // Aggiorna stato per entrambi i giocatori
       for (const g of partita.giocatori) {
-        io.to(g.id).emit('statoAggiornato', partita.getStato(g.id));
+        io.to(g.id).emit('statoAggiornato', {
+          ...partita.getStato(g.id),
+          cartaGiocata: cartaInfo,
+          giocatoreId: socket.id
+        });
       }
     }
   });

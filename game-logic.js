@@ -254,7 +254,10 @@ class ScopaMaresciallo {
 
     // Verifica che la presa sia valida
     if (carta.isAsso()) {
-      // L'asso prende tutto
+      // L'asso prende tutto, ma se il tavolo è vuoto deve posare
+      if (this.tavolo.length === 0) {
+        return { valida: true, tipo: 'posa' };
+      }
       if (cartePresa.length !== this.tavolo.length) {
         return { valida: false, errore: 'L\'asso deve prendere tutte le carte' };
       }

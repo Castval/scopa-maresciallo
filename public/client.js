@@ -171,8 +171,6 @@ function renderizzaGioco() {
   document.getElementById('nomeAvversario').textContent = statoGioco.nomeAvversario || 'Avversario';
   document.getElementById('puntiGiocatore').textContent = statoGioco.puntiGiocatore;
   document.getElementById('puntiAvversario').textContent = statoGioco.puntiAvversario;
-  document.getElementById('preseGiocatore').textContent = statoGioco.preseGiocatore;
-  document.getElementById('preseAvversario').textContent = statoGioco.preseAvversario;
   document.getElementById('carteAvversario').textContent = statoGioco.carteAvversario;
   document.getElementById('carteRimanenti').textContent = statoGioco.carteRimanenti;
 
@@ -318,14 +316,68 @@ socket.on('partitaIniziata', (stato) => {
   renderizzaGioco();
 });
 
-socket.on('statoAggiornato', (stato) => {
-  statoGioco = stato;
-  renderizzaGioco();
+socket.on('statoAggiornato', (dati) => {
+  const { cartaGiocata, giocatoreId, ...stato } = dati;
+
+  // Se l'avversario ha giocato una carta, mostrala per 1.5 secondi
+  if (cartaGiocata && giocatoreId !== socket.id) {
+    mostraCartaAvversario(cartaGiocata, () => {
+      statoGioco = stato;
+      renderizzaGioco();
+    });
+  } else {
+    statoGioco = stato;
+    renderizzaGioco();
+  }
 });
+
+// Mostra la carta giocata dall'avversario
+function mostraCartaAvversario(carta, callback) {
+  const tavolo = document.getElementById('tavolo');
+
+  // Crea elemento carta temporaneo
+  const cartaDiv = document.createElement('div');
+  cartaDiv.className = 'carta carta-avversario-giocata';
+  if (carta.valore === 10 && carta.seme === 'spade') {
+    cartaDiv.classList.add('maresciallo');
+  }
+  if (carta.valore === 7 && carta.seme === 'denari') {
+    cartaDiv.classList.add('settebello');
+  }
+
+  const imgSrc = getImmagineCarta(carta.valore, carta.seme);
+  cartaDiv.innerHTML = `<img src="${imgSrc}" alt="${carta.valore} di ${carta.seme}">`;
+
+  // Inserisci all'inizio del tavolo
+  tavolo.insertBefore(cartaDiv, tavolo.firstChild);
+
+  // Dopo 1.5 secondi, rimuovi e aggiorna
+  setTimeout(() => {
+    callback();
+  }, 1500);
+}
 
 socket.on('combinazioniDisponibili', ({ cartaId, combinazioni, puoiPosare: posare }) => {
   combinazioniDisponibili = combinazioni;
   puoiPosare = posare;
+
+  // Se è un asso e c'è almeno una carta a terra, prende tutto automaticamente
+  if (cartaSelezionata && cartaSelezionata.valore === 1 && statoGioco.tavolo.length > 0) {
+    socket.emit('giocaCarta', {
+      cartaId: cartaSelezionata.id,
+      cartePresaIds: statoGioco.tavolo.map(c => c.id)
+    });
+    return;
+  }
+
+  // Se è un asso e non c'è niente a terra, posa automaticamente
+  if (cartaSelezionata && cartaSelezionata.valore === 1 && statoGioco.tavolo.length === 0) {
+    socket.emit('giocaCarta', {
+      cartaId: cartaSelezionata.id,
+      cartePresaIds: []
+    });
+    return;
+  }
 
   // Evidenzia carte selezionabili
   document.querySelectorAll('#tavolo .carta').forEach(el => {
