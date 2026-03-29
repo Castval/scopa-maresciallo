@@ -33,6 +33,10 @@ class Carta {
     return this.valore === 7 && this.seme === 'denari';
   }
 
+  isOttoDenari() {
+    return this.valore === 8 && this.seme === 'denari';
+  }
+
   isAsso() {
     return this.valore === 1;
   }
@@ -231,6 +235,20 @@ class ScopaMaresciallo {
       return { valida: false, errore: 'Carte da prendere non valide' };
     }
 
+    // Caso speciale: l'asso va sempre nelle prese (anche se tavolo vuoto)
+    if (carta.isAsso()) {
+      if (this.tavolo.length === 0) {
+        // Asso con tavolo vuoto: va nelle prese, non è scopa
+        return { valida: true, tipo: 'presa', scopa: false, assoSolo: true };
+      }
+      // Asso con carte a terra: prende tutto, è scopa
+      if (cartePresa.length !== this.tavolo.length) {
+        return { valida: false, errore: 'L\'asso deve prendere tutte le carte' };
+      }
+      const presaConIdentica = cartePresa.some(c => c.seme === carta.seme && c.valore === carta.valore);
+      return { valida: true, tipo: 'presa', scopa: true, conIdentica: presaConIdentica };
+    }
+
     // Se non prende niente, deve posare
     if (cartePresa.length === 0) {
       // Verifica che non ci siano prese obbligatorie
@@ -250,18 +268,6 @@ class ScopaMaresciallo {
       if (!sarebbeScopa) {
         return { valida: false, errore: 'Non puoi prendere carta identica se non fai scopa' };
       }
-    }
-
-    // Verifica che la presa sia valida
-    if (carta.isAsso()) {
-      // L'asso prende tutto, ma se il tavolo è vuoto deve posare
-      if (this.tavolo.length === 0) {
-        return { valida: true, tipo: 'posa' };
-      }
-      if (cartePresa.length !== this.tavolo.length) {
-        return { valida: false, errore: 'L\'asso deve prendere tutte le carte' };
-      }
-      return { valida: true, tipo: 'presa', scopa: true, conIdentica: presaConIdentica };
     }
 
     // Verifica presa singola o somma
@@ -411,6 +417,14 @@ class ScopaMaresciallo {
       punti[g.id] += settebelli;
     }
 
+    // Otto di denari (1 punto per ogni 8 di denari se si ha anche il settebello)
+    for (const g of this.giocatori) {
+      const settebelli = g.prese.filter(c => c.isSettebello()).length;
+      const ottoDenari = g.prese.filter(c => c.isOttoDenari()).length;
+      // Il bonus è il minimo tra settebelli e otto di denari
+      punti[g.id] += Math.min(settebelli, ottoDenari);
+    }
+
     // Primiera
     const primieraG1 = this.calcolaPrimiera(g1.prese);
     const primieraG2 = this.calcolaPrimiera(g2.prese);
@@ -423,6 +437,74 @@ class ScopaMaresciallo {
     }
 
     return punti;
+  }
+
+  calcolaPuntiRoundDettagliato() {
+    const dettagli = {};
+    const g1 = this.giocatori[0];
+    const g2 = this.giocatori[1];
+
+    for (const g of this.giocatori) {
+      // Calcola scope (somma dei valori)
+      let scopePunti = 0;
+      for (const scopa of g.scope) {
+        scopePunti += scopa.valore;
+      }
+
+      // Marescialli
+      const marescialli = g.prese.filter(c => c.isMaresciallo()).length;
+      const marescialliScopaNegativa = g.scope.filter(s => s.valore === -4).length;
+      const marescialliScopaPositiva = g.scope.filter(s => s.marescialloConMaresciallo).length * 2;
+      const marescialliPenalita = Math.max(0, marescialli - marescialliScopaNegativa - marescialliScopaPositiva);
+
+      // Settebello
+      const settebelli = g.prese.filter(c => c.isSettebello()).length;
+
+      // Otto di denari (bonus se si ha anche settebello)
+      const ottoDenari = g.prese.filter(c => c.isOttoDenari()).length;
+      const bonusOtto = Math.min(settebelli, ottoDenari);
+
+      // Napola
+      const napolaPunti = this.calcolaNapola(g.prese);
+
+      dettagli[g.id] = {
+        nome: g.nome,
+        scope: scopePunti,
+        numScope: g.scope.length,
+        marescialli: -marescialliPenalita,
+        settebello: settebelli,
+        ottoDenari: bonusOtto,
+        napola: napolaPunti,
+        denari: 0,
+        carte: 0,
+        primiera: 0,
+        totale: 0
+      };
+    }
+
+    // Più carte di denari
+    const denariG1 = g1.prese.filter(c => c.seme === 'denari').length;
+    const denariG2 = g2.prese.filter(c => c.seme === 'denari').length;
+    if (denariG1 > denariG2) dettagli[g1.id].denari = 1;
+    else if (denariG2 > denariG1) dettagli[g2.id].denari = 1;
+
+    // Più carte totali
+    if (g1.prese.length > g2.prese.length) dettagli[g1.id].carte = 1;
+    else if (g2.prese.length > g1.prese.length) dettagli[g2.id].carte = 1;
+
+    // Primiera
+    const primieraG1 = this.calcolaPrimiera(g1.prese);
+    const primieraG2 = this.calcolaPrimiera(g2.prese);
+    if (primieraG1 > primieraG2) dettagli[g1.id].primiera = 1;
+    else if (primieraG2 > primieraG1) dettagli[g2.id].primiera = 1;
+
+    // Calcola totali
+    for (const g of this.giocatori) {
+      const d = dettagli[g.id];
+      d.totale = d.scope + d.marescialli + d.settebello + d.ottoDenari + d.napola + d.denari + d.carte + d.primiera;
+    }
+
+    return dettagli;
   }
 
   calcolaPrimiera(carte) {

@@ -333,7 +333,7 @@ socket.on('statoAggiornato', (dati) => {
 
 // Mostra la carta giocata dall'avversario
 function mostraCartaAvversario(carta, callback) {
-  const tavolo = document.getElementById('tavolo');
+  const tavoloContainer = document.querySelector('.tavolo-container');
 
   // Crea elemento carta temporaneo
   const cartaDiv = document.createElement('div');
@@ -348,13 +348,14 @@ function mostraCartaAvversario(carta, callback) {
   const imgSrc = getImmagineCarta(carta.valore, carta.seme);
   cartaDiv.innerHTML = `<img src="${imgSrc}" alt="${carta.valore} di ${carta.seme}">`;
 
-  // Inserisci all'inizio del tavolo
-  tavolo.insertBefore(cartaDiv, tavolo.firstChild);
+  // Inserisci nel container del tavolo (sopra il tavolo)
+  tavoloContainer.appendChild(cartaDiv);
 
-  // Dopo 1.5 secondi, rimuovi e aggiorna
+  // Dopo 1 secondo, rimuovi e aggiorna
   setTimeout(() => {
+    cartaDiv.remove();
     callback();
-  }, 1500);
+  }, 1000);
 }
 
 socket.on('combinazioniDisponibili', ({ cartaId, combinazioni, puoiPosare: posare }) => {
@@ -370,8 +371,8 @@ socket.on('combinazioniDisponibili', ({ cartaId, combinazioni, puoiPosare: posar
     return;
   }
 
-  // Se è un asso e non c'è niente a terra, posa automaticamente
-  if (cartaSelezionata && cartaSelezionata.valore === 1 && statoGioco.tavolo.length === 0) {
+  // Se non ci sono combinazioni possibili, posa automaticamente
+  if (cartaSelezionata && combinazioni.length === 0) {
     socket.emit('giocaCarta', {
       cartaId: cartaSelezionata.id,
       cartePresaIds: []
@@ -395,7 +396,7 @@ socket.on('mossaNonValida', (errore) => {
   mostraMessaggio(errore, 'errore');
 });
 
-socket.on('fineRound', ({ stato, puntiRound, finePartita, vincitore }) => {
+socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversario, finePartita, vincitore }) => {
   statoGioco = stato;
 
   const titoloEl = document.getElementById('titoloFineRound');
@@ -408,23 +409,37 @@ socket.on('fineRound', ({ stato, puntiRound, finePartita, vincitore }) => {
     btnProssimo.classList.add('nascosto');
     btnNuova.classList.remove('nascosto');
   } else {
-    titoloEl.textContent = 'Fine Round';
+    titoloEl.textContent = 'Fine Smazzata';
     btnProssimo.classList.remove('nascosto');
     btnNuova.classList.add('nascosto');
   }
 
-  // Mostra punti
+  // Mostra nomi
   document.getElementById('nomeG1').textContent = statoGioco.nomeGiocatore;
   document.getElementById('nomeG2').textContent = statoGioco.nomeAvversario;
 
-  // I punti del round per il giocatore corrente
-  const mioId = Object.keys(puntiRound).find(id =>
-    statoGioco.nomeGiocatore && puntiRound[id] !== undefined
-  );
-
-  document.getElementById('puntiRoundG1').textContent = statoGioco.puntiGiocatore;
-  document.getElementById('puntiRoundG2').textContent = statoGioco.puntiAvversario;
+  // Dettagli giocatore (G1)
+  document.getElementById('scopeG1').textContent = dettagliGiocatore.scope;
+  document.getElementById('denariG1').textContent = dettagliGiocatore.denari;
+  document.getElementById('carteG1').textContent = dettagliGiocatore.carte;
+  document.getElementById('primieraG1').textContent = dettagliGiocatore.primiera;
+  document.getElementById('settebelloG1').textContent = dettagliGiocatore.settebello;
+  document.getElementById('ottoG1').textContent = dettagliGiocatore.ottoDenari;
+  document.getElementById('napolaG1').textContent = dettagliGiocatore.napola;
+  document.getElementById('marescialliG1').textContent = dettagliGiocatore.marescialli;
+  document.getElementById('puntiRoundG1').textContent = dettagliGiocatore.totale;
   document.getElementById('puntiTotaliG1').textContent = statoGioco.puntiGiocatore;
+
+  // Dettagli avversario (G2)
+  document.getElementById('scopeG2').textContent = dettagliAvversario.scope;
+  document.getElementById('denariG2').textContent = dettagliAvversario.denari;
+  document.getElementById('carteG2').textContent = dettagliAvversario.carte;
+  document.getElementById('primieraG2').textContent = dettagliAvversario.primiera;
+  document.getElementById('settebelloG2').textContent = dettagliAvversario.settebello;
+  document.getElementById('ottoG2').textContent = dettagliAvversario.ottoDenari;
+  document.getElementById('napolaG2').textContent = dettagliAvversario.napola;
+  document.getElementById('marescialliG2').textContent = dettagliAvversario.marescialli;
+  document.getElementById('puntiRoundG2').textContent = dettagliAvversario.totale;
   document.getElementById('puntiTotaliG2').textContent = statoGioco.puntiAvversario;
 
   mostraSchermata('fineRound');

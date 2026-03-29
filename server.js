@@ -112,12 +112,16 @@ io.on('connection', (socket) => {
     // Se è fine round o fine partita
     if (partita.stato === 'fineRound' || partita.stato === 'finePartita') {
       const puntiRound = partita.calcolaPuntiRound();
+      const dettagliPunti = partita.calcolaPuntiRoundDettagliato();
 
       for (const g of partita.giocatori) {
         const stato = partita.getStato(g.id);
+        const avversario = partita.giocatori.find(p => p.id !== g.id);
         io.to(g.id).emit('fineRound', {
           stato,
           puntiRound,
+          dettagliGiocatore: dettagliPunti[g.id],
+          dettagliAvversario: dettagliPunti[avversario.id],
           finePartita: partita.stato === 'finePartita',
           vincitore: partita.stato === 'finePartita' ?
             partita.giocatori.find(p => p.puntiTotali >= partita.puntiVittoria)?.nome : null,

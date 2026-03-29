@@ -101,8 +101,22 @@ body {
 }
 
 .divisore {
-  margin: 20px 0;
+  margin: 25px 0;
   color: #a8d5a2;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.divisore::before,
+.divisore::after {
+  content: '';
+  flex: 1;
+  max-width: 100px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #a8d5a2, transparent);
 }
 
 .messaggio {
@@ -340,8 +354,44 @@ body {
 }
 
 .colonna-punti h3 {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   color: #d4af37;
+}
+
+.tabella-punti {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+.tabella-punti td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.tabella-punti td:first-child {
+  text-align: left;
+}
+
+.tabella-punti td:last-child {
+  text-align: right;
+  font-weight: bold;
+}
+
+.tabella-punti .riga-totale {
+  border-top: 2px solid #d4af37;
+  background: rgba(212, 175, 55, 0.2);
+}
+
+.tabella-punti .riga-totale td {
+  padding: 10px;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+.punti-totali {
+  margin-top: 10px;
+  font-size: 1.2em;
 }
 
 .colonna-punti p {
@@ -354,27 +404,36 @@ body {
 
 /* Carta giocata dall'avversario */
 .carta-avversario-giocata {
-  animation: cartaAvversario 1.5s ease-in-out;
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: cartaAvversario 1s ease-in-out;
   outline: 3px solid #ff6b6b;
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+  box-shadow: 0 0 25px rgba(255, 107, 107, 0.8);
+  z-index: 100;
+}
+
+.tavolo-container {
+  position: relative;
 }
 
 @keyframes cartaAvversario {
   0% {
-    transform: translateY(-50px) scale(1.2);
+    transform: translateX(-50%) translateY(-30px) scale(1.3);
     opacity: 0;
   }
   20% {
-    transform: translateY(0) scale(1.1);
+    transform: translateX(-50%) translateY(0) scale(1.2);
     opacity: 1;
   }
   80% {
-    transform: translateY(0) scale(1.1);
+    transform: translateX(-50%) translateY(0) scale(1.2);
     opacity: 1;
   }
   100% {
-    transform: translateY(0) scale(1);
-    opacity: 0.7;
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 0;
   }
 }
 
