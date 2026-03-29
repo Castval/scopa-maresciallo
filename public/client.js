@@ -236,9 +236,8 @@ function renderizzaMazzoPrese() {
     return;
   }
 
-  // Calcola quante carte "normali" mostrare (simulazione del mazzetto)
-  // Mostriamo fino a 5 carte impilate per dare l'idea del mazzo
-  const carteNormaliDaMostrare = Math.min(5, Math.max(1, numPrese - scope.length));
+  // Calcola quante carte "normali" mostrare (max 3)
+  const carteNormaliDaMostrare = Math.min(3, Math.max(1, numPrese - scope.length));
 
   // Renderizza le carte normali (dorso) impilate
   for (let i = 0; i < carteNormaliDaMostrare; i++) {
@@ -250,10 +249,13 @@ function renderizzaMazzoPrese() {
     mazzoPrese.appendChild(cartaPresa);
   }
 
-  // Renderizza le scope di traverso
-  scope.forEach((scopa, idx) => {
-    // Parse carta ID per ottenere valore e seme
-    // formato: "7_denari_0"
+  // Mostra max 3 scope visivamente, le altre sono "nascoste" nel mazzo
+  const maxScopeVisibili = 7;
+  const scopeDaMostrare = scope.slice(-maxScopeVisibili); // Ultime 3 scope
+  const scopeNascoste = scope.length - scopeDaMostrare.length;
+
+  // Renderizza le scope di traverso (compatte)
+  scopeDaMostrare.forEach((scopa, idx) => {
     const parti = scopa.carta.split('_');
     const valore = parseInt(parti[0]);
     const seme = parti[1];
@@ -261,80 +263,11 @@ function renderizzaMazzoPrese() {
     const cartaScopa = document.createElement('div');
     cartaScopa.className = 'carta-scopa';
 
-    // Posiziona le scope in modo che sporgano dal mazzo
-    const baseTop = (carteNormaliDaMostrare * 2) + 10;
-    cartaScopa.style.top = (baseTop + idx * 30) + 'px';
+    // Posiziona le scope più compattamente (15px invece di 30px)
+    const baseTop = (carteNormaliDaMostrare * 2) + 5;
+    cartaScopa.style.top = (baseTop + idx * 18) + 'px';
     cartaScopa.style.left = '-15px';
-
-    // Aggiungi immagine della carta
-    const imgSrc = getImmagineCarta(valore, seme);
-    cartaScopa.innerHTML = `<img src="${imgSrc}" alt="${valore} di ${seme}">`;
-
-    // Aggiungi indicatore punti
-    const puntiDiv = document.createElement('div');
-    puntiDiv.className = 'scopa-punti';
-
-    if (scopa.valore === 10) {
-      puntiDiv.textContent = '+10';
-      puntiDiv.classList.add('super');
-    } else if (scopa.valore < 0) {
-      puntiDiv.textContent = scopa.valore;
-      puntiDiv.classList.add('negativo');
-    } else {
-      puntiDiv.textContent = '+' + scopa.valore;
-    }
-
-    cartaScopa.appendChild(puntiDiv);
-    mazzoPrese.appendChild(cartaScopa);
-  });
-
-  // Aggiungi contatore
-  const contatore = document.createElement('div');
-  contatore.className = 'contatore-prese';
-  contatore.textContent = `${numPrese} carte`;
-  mazzoPrese.appendChild(contatore);
-}
-
-// Renderizza il mazzo delle prese dell'avversario
-function renderizzaMazzoPreseAvversario() {
-  const mazzoPrese = document.getElementById('mazzoPreseAvversario');
-  mazzoPrese.innerHTML = '';
-
-  if (!statoGioco) return;
-
-  const numPrese = statoGioco.preseAvversario;
-  const scope = statoGioco.scopeAvversario || [];
-
-  // Se non ci sono prese, non mostrare nulla
-  if (numPrese === 0 && scope.length === 0) {
-    return;
-  }
-
-  // Calcola quante carte "normali" mostrare
-  const carteNormaliDaMostrare = Math.min(5, Math.max(1, numPrese - scope.length));
-
-  // Renderizza le carte normali (dorso) impilate
-  for (let i = 0; i < carteNormaliDaMostrare; i++) {
-    const cartaPresa = document.createElement('div');
-    cartaPresa.className = 'carta-presa';
-    cartaPresa.style.top = (i * 2) + 'px';
-    cartaPresa.style.left = (i * 1) + 'px';
-    cartaPresa.style.zIndex = i;
-    mazzoPrese.appendChild(cartaPresa);
-  }
-
-  // Renderizza le scope di traverso
-  scope.forEach((scopa, idx) => {
-    const parti = scopa.carta.split('_');
-    const valore = parseInt(parti[0]);
-    const seme = parti[1];
-
-    const cartaScopa = document.createElement('div');
-    cartaScopa.className = 'carta-scopa';
-
-    const baseTop = (carteNormaliDaMostrare * 2) + 10;
-    cartaScopa.style.top = (baseTop + idx * 30) + 'px';
-    cartaScopa.style.left = '-15px';
+    cartaScopa.style.zIndex = 50 + idx;
 
     const imgSrc = getImmagineCarta(valore, seme);
     cartaScopa.innerHTML = `<img src="${imgSrc}" alt="${valore} di ${seme}">`;
@@ -357,10 +290,94 @@ function renderizzaMazzoPreseAvversario() {
     mazzoPrese.appendChild(cartaScopa);
   });
 
-  // Contatore
+  // Contatore con info scope
   const contatore = document.createElement('div');
   contatore.className = 'contatore-prese';
-  contatore.textContent = `${numPrese} carte`;
+  const totaleScope = scope.reduce((sum, s) => sum + s.valore, 0);
+  if (scope.length > 0) {
+    contatore.innerHTML = `${numPrese} carte<br><strong>${scope.length} scope (${totaleScope >= 0 ? '+' : ''}${totaleScope})</strong>`;
+  } else {
+    contatore.textContent = `${numPrese} carte`;
+  }
+  mazzoPrese.appendChild(contatore);
+}
+
+// Renderizza il mazzo delle prese dell'avversario
+function renderizzaMazzoPreseAvversario() {
+  const mazzoPrese = document.getElementById('mazzoPreseAvversario');
+  mazzoPrese.innerHTML = '';
+
+  if (!statoGioco) return;
+
+  const numPrese = statoGioco.preseAvversario;
+  const scope = statoGioco.scopeAvversario || [];
+
+  // Se non ci sono prese, non mostrare nulla
+  if (numPrese === 0 && scope.length === 0) {
+    return;
+  }
+
+  // Calcola quante carte "normali" mostrare (max 3)
+  const carteNormaliDaMostrare = Math.min(3, Math.max(1, numPrese - scope.length));
+
+  // Renderizza le carte normali (dorso) impilate
+  for (let i = 0; i < carteNormaliDaMostrare; i++) {
+    const cartaPresa = document.createElement('div');
+    cartaPresa.className = 'carta-presa';
+    cartaPresa.style.top = (i * 2) + 'px';
+    cartaPresa.style.left = (i * 1) + 'px';
+    cartaPresa.style.zIndex = i;
+    mazzoPrese.appendChild(cartaPresa);
+  }
+
+  // Mostra max 3 scope visivamente
+  const maxScopeVisibili = 7;
+  const scopeDaMostrare = scope.slice(-maxScopeVisibili);
+
+  // Renderizza le scope di traverso (compatte)
+  scopeDaMostrare.forEach((scopa, idx) => {
+    const parti = scopa.carta.split('_');
+    const valore = parseInt(parti[0]);
+    const seme = parti[1];
+
+    const cartaScopa = document.createElement('div');
+    cartaScopa.className = 'carta-scopa';
+
+    const baseTop = (carteNormaliDaMostrare * 2) + 5;
+    cartaScopa.style.top = (baseTop + idx * 18) + 'px';
+    cartaScopa.style.left = '-15px';
+    cartaScopa.style.zIndex = 50 + idx;
+
+    const imgSrc = getImmagineCarta(valore, seme);
+    cartaScopa.innerHTML = `<img src="${imgSrc}" alt="${valore} di ${seme}">`;
+
+    // Indicatore punti
+    const puntiDiv = document.createElement('div');
+    puntiDiv.className = 'scopa-punti';
+
+    if (scopa.valore === 10) {
+      puntiDiv.textContent = '+10';
+      puntiDiv.classList.add('super');
+    } else if (scopa.valore < 0) {
+      puntiDiv.textContent = scopa.valore;
+      puntiDiv.classList.add('negativo');
+    } else {
+      puntiDiv.textContent = '+' + scopa.valore;
+    }
+
+    cartaScopa.appendChild(puntiDiv);
+    mazzoPrese.appendChild(cartaScopa);
+  });
+
+  // Contatore con info scope
+  const contatore = document.createElement('div');
+  contatore.className = 'contatore-prese';
+  const totaleScope = scope.reduce((sum, s) => sum + s.valore, 0);
+  if (scope.length > 0) {
+    contatore.innerHTML = `${numPrese} carte<br><strong>${scope.length} scope (${totaleScope >= 0 ? '+' : ''}${totaleScope})</strong>`;
+  } else {
+    contatore.textContent = `${numPrese} carte`;
+  }
   mazzoPrese.appendChild(contatore);
 }
 
