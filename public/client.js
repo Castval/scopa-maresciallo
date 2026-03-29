@@ -380,6 +380,15 @@ socket.on('combinazioniDisponibili', ({ cartaId, combinazioni, puoiPosare: posar
     return;
   }
 
+  // Se c'è solo una combinazione possibile, prendi automaticamente
+  if (cartaSelezionata && combinazioni.length === 1) {
+    socket.emit('giocaCarta', {
+      cartaId: cartaSelezionata.id,
+      cartePresaIds: combinazioni[0]
+    });
+    return;
+  }
+
   // Evidenzia carte selezionabili
   document.querySelectorAll('#tavolo .carta').forEach(el => {
     el.classList.remove('selezionabile');
