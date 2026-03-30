@@ -107,7 +107,7 @@ class Giocatore {
 }
 
 class ScopaMaresciallo {
-  constructor(roomId) {
+  constructor(roomId, puntiVittoria = 31) {
     this.roomId = roomId;
     this.mazzo = new Mazzo();
     this.giocatori = [];
@@ -115,7 +115,7 @@ class ScopaMaresciallo {
     this.turnoCorrente = 0;
     this.stato = 'attesa'; // attesa, inCorso, fineRound, finePartita
     this.ultimoAPrendere = null;
-    this.puntiVittoria = 31;
+    this.puntiVittoria = puntiVittoria;
   }
 
   aggiungiGiocatore(id, nome) {
@@ -701,7 +701,8 @@ class ScopaMaresciallo {
       nomeGiocatore: giocatore ? giocatore.nome : '',
       nomeAvversario: avversario ? avversario.nome : '',
       turnoMio: this.getGiocatoreCorrente()?.id === giocatoreId,
-      carteRimanenti: this.mazzo.rimanenti()
+      carteRimanenti: this.mazzo.rimanenti(),
+      puntiVittoria: this.puntiVittoria
     };
   }
 }

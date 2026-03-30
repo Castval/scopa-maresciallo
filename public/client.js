@@ -173,6 +173,7 @@ function renderizzaGioco() {
   document.getElementById('puntiAvversario').textContent = statoGioco.puntiAvversario;
   document.getElementById('carteAvversario').textContent = statoGioco.carteAvversario;
   document.getElementById('carteRimanenti').textContent = statoGioco.carteRimanenti;
+  document.getElementById('puntiVittoriaDisplay').textContent = statoGioco.puntiVittoria || 31;
 
   // Turno
   const turnoIndicatore = document.getElementById('turnoIndicatore');
@@ -410,7 +411,8 @@ document.getElementById('btnCreaStanza').addEventListener('click', () => {
     mostraMessaggio('Inserisci il tuo nome', 'errore');
     return;
   }
-  socket.emit('creaStanza', nome);
+  const puntiVittoria = parseInt(document.getElementById('puntiVittoria').value);
+  socket.emit('creaStanza', { nome, puntiVittoria });
 });
 
 document.getElementById('btnUnisciti').addEventListener('click', () => {
@@ -461,7 +463,7 @@ socket.on('stanzeDisponibili', (stanze) => {
       item.className = 'stanza-item';
       item.innerHTML = `
         <span class="codice">${stanza.codice}</span>
-        <span class="creatore">di ${stanza.creatore}</span>
+        <span class="creatore">di ${stanza.creatore} (${stanza.puntiVittoria} pt)</span>
       `;
       item.addEventListener('click', () => {
         document.getElementById('codiceStanza').value = stanza.codice;

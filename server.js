@@ -37,7 +37,8 @@ io.on('connection', (socket) => {
       if (partita.giocatori.length === 1 && partita.stato === 'attesa') {
         stanzeDisponibili.push({
           codice: codice,
-          creatore: partita.giocatori[0].nome
+          creatore: partita.giocatori[0].nome,
+          puntiVittoria: partita.puntiVittoria
         });
       }
     }
@@ -45,9 +46,10 @@ io.on('connection', (socket) => {
   });
 
   // Crea nuova stanza
-  socket.on('creaStanza', (nome) => {
+  socket.on('creaStanza', ({ nome, puntiVittoria }) => {
     const codice = generaCodiceStanza();
-    const partita = new ScopaMaresciallo(codice);
+    const punti = [11, 21, 31, 41, 51].includes(puntiVittoria) ? puntiVittoria : 31;
+    const partita = new ScopaMaresciallo(codice, punti);
     partita.aggiungiGiocatore(socket.id, nome);
 
     stanze.set(codice, partita);

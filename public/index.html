@@ -19,6 +19,16 @@
       </div>
 
       <div class="bottoni-lobby">
+        <div class="form-gruppo">
+          <label for="puntiVittoria">Punti per vincere:</label>
+          <select id="puntiVittoria">
+            <option value="11">11 punti</option>
+            <option value="21">21 punti</option>
+            <option value="31" selected>31 punti</option>
+            <option value="41">41 punti</option>
+            <option value="51">51 punti</option>
+          </select>
+        </div>
         <button id="btnCreaStanza" class="btn-primario">Crea Stanza</button>
         <div class="divisore">oppure</div>
         <div class="form-gruppo">
@@ -59,7 +69,7 @@
             <li><strong>Napola (1,2,3 di denari):</strong> 3 punti + 1 per ogni carta successiva fino al 10 (max 2 napole)</li>
           </ul>
 
-          <p><strong>Vittoria:</strong> 31 punti</p>
+          <p><strong>Vittoria:</strong> punti scelti dal creatore della stanza</p>
         </div>
       </div>
     </div>
@@ -86,6 +96,7 @@
         </div>
         <div class="info-centro">
           <span id="turnoIndicatore">Turno avversario</span>
+          <span class="obiettivo-info">Obiettivo: <strong id="puntiVittoriaDisplay">31</strong> pt</span>
           <span class="mazzo-info">Mazzo: <span id="carteRimanenti">0</span></span>
         </div>
         <div class="info-giocatore tu">
