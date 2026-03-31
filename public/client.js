@@ -39,6 +39,7 @@ let cartaSelezionata = null;
 let carteSelezionateTavolo = [];
 let combinazioniDisponibili = [];
 let puoiPosare = false;
+let numGiocatoriAttesa = 2;
 
 // Elementi DOM
 const schermate = {
@@ -166,12 +167,18 @@ function aggiornaBottoniAzione() {
 function renderizzaGioco() {
   if (!statoGioco) return;
 
+  const is4 = statoGioco.numGiocatori === 4;
+
   // Info giocatori
-  document.getElementById('nomeGiocatoreDisplay').textContent = statoGioco.nomeGiocatore;
-  document.getElementById('nomeAvversario').textContent = statoGioco.nomeAvversario || 'Avversario';
+  if (is4) {
+    document.getElementById('nomeGiocatoreDisplay').textContent = statoGioco.nomeSquadra;
+    document.getElementById('nomeAvversario').textContent = statoGioco.nomeSquadraAvversaria;
+  } else {
+    document.getElementById('nomeGiocatoreDisplay').textContent = statoGioco.nomeGiocatore;
+    document.getElementById('nomeAvversario').textContent = statoGioco.nomeAvversario || 'Avversario';
+  }
   document.getElementById('puntiGiocatore').textContent = statoGioco.puntiGiocatore;
   document.getElementById('puntiAvversario').textContent = statoGioco.puntiAvversario;
-  document.getElementById('carteAvversario').textContent = statoGioco.carteAvversario;
   document.getElementById('carteRimanenti').textContent = statoGioco.carteRimanenti;
   document.getElementById('puntiVittoriaDisplay').textContent = statoGioco.puntiVittoria || 31;
 
@@ -181,21 +188,12 @@ function renderizzaGioco() {
     turnoIndicatore.textContent = 'Tocca a te!';
     turnoIndicatore.classList.add('mio-turno');
   } else {
-    turnoIndicatore.textContent = 'Turno avversario';
+    turnoIndicatore.textContent = `Turno di ${statoGioco.turnoNome}`;
     turnoIndicatore.classList.remove('mio-turno');
   }
 
-  // Mano avversario
-  const manoAvversario = document.getElementById('manoAvversario');
-  manoAvversario.innerHTML = '';
-  for (let i = 0; i < statoGioco.carteAvversario; i++) {
-    const carta = document.createElement('div');
-    carta.className = 'carta';
-    manoAvversario.appendChild(carta);
-  }
-
-  // Mazzo prese avversario
-  renderizzaMazzoPreseAvversario();
+  // Area altri giocatori (dinamica)
+  renderizzaAltriGiocatori();
 
   // Tavolo
   const tavolo = document.getElementById('tavolo');
@@ -220,6 +218,59 @@ function renderizzaGioco() {
   combinazioniDisponibili = [];
   puoiPosare = false;
   document.getElementById('azioniMossa').classList.add('nascosto');
+}
+
+// Renderizza area altri giocatori (avversari e compagno)
+function renderizzaAltriGiocatori() {
+  const container = document.getElementById('areaAvversarioContainer');
+  container.innerHTML = '';
+
+  if (!statoGioco) return;
+
+  const altriGiocatori = statoGioco.altriGiocatori || [];
+
+  // Container mani altri giocatori
+  const maniDiv = document.createElement('div');
+  maniDiv.className = 'altri-giocatori-mani';
+
+  for (const altro of altriGiocatori) {
+    const areaDiv = document.createElement('div');
+    areaDiv.className = `area-altro-giocatore ${altro.tipo}`;
+
+    const nomeDiv = document.createElement('div');
+    nomeDiv.className = 'nome-altro';
+    nomeDiv.textContent = altro.nome;
+    if (altro.tipo === 'compagno') nomeDiv.classList.add('compagno-label');
+    areaDiv.appendChild(nomeDiv);
+
+    const manoDiv = document.createElement('div');
+    manoDiv.className = 'mano-carte dorso';
+    for (let i = 0; i < altro.carte; i++) {
+      const carta = document.createElement('div');
+      carta.className = 'carta';
+      manoDiv.appendChild(carta);
+    }
+    areaDiv.appendChild(manoDiv);
+
+    maniDiv.appendChild(areaDiv);
+  }
+
+  container.appendChild(maniDiv);
+
+  // Prese avversario
+  const preseDiv = document.createElement('div');
+  preseDiv.className = 'area-prese avversario';
+  const preseTitle = document.createElement('h4');
+  preseTitle.textContent = statoGioco.numGiocatori === 4 ? 'Prese avversari' : 'Prese avversario';
+  preseDiv.appendChild(preseTitle);
+  const mazzoPrese = document.createElement('div');
+  mazzoPrese.className = 'mazzo-prese';
+  mazzoPrese.id = 'mazzoPreseAvversario';
+  preseDiv.appendChild(mazzoPrese);
+  container.appendChild(preseDiv);
+
+  // Renderizza prese avversario
+  renderizzaMazzoPreseAvversario();
 }
 
 // Renderizza il mazzo delle prese con scope di traverso
@@ -399,6 +450,27 @@ function mostraMessaggio(testo, tipo = '') {
   }, 3000);
 }
 
+// Aggiorna schermata attesa
+function aggiornaAttesa(giocatori) {
+  const container = document.getElementById('giocatoriConnessi');
+  container.innerHTML = '';
+
+  for (const g of giocatori) {
+    const div = document.createElement('div');
+    div.className = 'giocatore-connesso';
+    div.textContent = g.nome;
+    container.appendChild(div);
+  }
+
+  const mancanti = numGiocatoriAttesa - giocatori.length;
+  const msg = document.getElementById('attesaMessaggio');
+  if (mancanti > 0) {
+    msg.textContent = `In attesa di ${mancanti} giocator${mancanti === 1 ? 'e' : 'i'}...`;
+  } else {
+    msg.textContent = 'Partita in partenza...';
+  }
+}
+
 // Toggle regole
 document.querySelector('.sezione-regole h3')?.addEventListener('click', () => {
   document.querySelector('.sezione-regole').classList.toggle('chiusa');
@@ -412,7 +484,9 @@ document.getElementById('btnCreaStanza').addEventListener('click', () => {
     return;
   }
   const puntiVittoria = parseInt(document.getElementById('puntiVittoria').value);
-  socket.emit('creaStanza', { nome, puntiVittoria });
+  const numGiocatori = parseInt(document.querySelector('input[name="numGiocatori"]:checked').value);
+  numGiocatoriAttesa = numGiocatori;
+  socket.emit('creaStanza', { nome, puntiVittoria, numGiocatori });
 });
 
 document.getElementById('btnUnisciti').addEventListener('click', () => {
@@ -461,9 +535,10 @@ socket.on('stanzeDisponibili', (stanze) => {
     stanze.forEach(stanza => {
       const item = document.createElement('div');
       item.className = 'stanza-item';
+      const tipoPartita = stanza.numGiocatori === 4 ? '2v2' : '1v1';
       item.innerHTML = `
         <span class="codice">${stanza.codice}</span>
-        <span class="creatore">di ${stanza.creatore} (${stanza.puntiVittoria} pt)</span>
+        <span class="creatore">di ${stanza.creatore} (${stanza.puntiVittoria}pt, ${tipoPartita}, ${stanza.giocatoriConnessi}/${stanza.numGiocatori})</span>
       `;
       item.addEventListener('click', () => {
         document.getElementById('codiceStanza').value = stanza.codice;
@@ -511,12 +586,15 @@ document.getElementById('btnNuovaPartita').addEventListener('click', () => {
 });
 
 // Socket events
-socket.on('stanzaCreata', ({ codice, nome }) => {
+socket.on('stanzaCreata', ({ codice, nome, numGiocatori }) => {
   document.getElementById('codiceStanzaDisplay').textContent = codice;
+  numGiocatoriAttesa = numGiocatori || 2;
+  aggiornaAttesa([{ nome }]);
   mostraSchermata('attesa');
 });
 
 socket.on('unitoAStanza', ({ codice, nome }) => {
+  document.getElementById('codiceStanzaDisplay').textContent = codice;
   mostraSchermata('attesa');
 });
 
@@ -524,8 +602,9 @@ socket.on('errore', (messaggio) => {
   mostraMessaggio(messaggio, 'errore');
 });
 
-socket.on('giocatoreUnito', ({ giocatori }) => {
-  // Aggiorna UI se necessario
+socket.on('giocatoreUnito', ({ giocatori, maxGiocatori }) => {
+  if (maxGiocatori) numGiocatoriAttesa = maxGiocatori;
+  aggiornaAttesa(giocatori);
 });
 
 socket.on('partitaIniziata', (stato) => {
@@ -631,8 +710,12 @@ socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversar
   const btnNuova = document.getElementById('btnNuovaPartita');
 
   if (finePartita) {
-    titoloEl.textContent = vincitore === statoGioco.nomeGiocatore ?
-      'Hai vinto!' : `${vincitore} ha vinto!`;
+    const haVinto = vincitore && vincitore.includes(statoGioco.nomeGiocatore);
+    if (statoGioco.numGiocatori === 4) {
+      titoloEl.textContent = haVinto ? 'La tua squadra ha vinto!' : `${vincitore} hanno vinto!`;
+    } else {
+      titoloEl.textContent = haVinto ? 'Hai vinto!' : `${vincitore} ha vinto!`;
+    }
     btnProssimo.classList.add('nascosto');
     btnNuova.classList.remove('nascosto');
   } else if (pareggio) {
@@ -645,9 +728,10 @@ socket.on('fineRound', ({ stato, puntiRound, dettagliGiocatore, dettagliAvversar
     btnNuova.classList.add('nascosto');
   }
 
-  // Mostra nomi
-  document.getElementById('nomeG1').textContent = statoGioco.nomeGiocatore;
-  document.getElementById('nomeG2').textContent = statoGioco.nomeAvversario;
+  // Mostra nomi (squadra in 4 giocatori)
+  const is4p = statoGioco.numGiocatori === 4;
+  document.getElementById('nomeG1').textContent = is4p ? statoGioco.nomeSquadra : statoGioco.nomeGiocatore;
+  document.getElementById('nomeG2').textContent = is4p ? statoGioco.nomeSquadraAvversaria : statoGioco.nomeAvversario;
 
   // Dettagli giocatore (G1)
   document.getElementById('scopeG1').textContent = dettagliGiocatore.scope;
@@ -714,7 +798,7 @@ function renderizzaMiniCarte(elementId, carte, mostraPunti = false) {
 }
 
 socket.on('avversarioDisconnesso', () => {
-  mostraMessaggio('L\'avversario si è disconnesso', 'errore');
+  mostraMessaggio('Un giocatore si è disconnesso', 'errore');
   setTimeout(() => {
     mostraSchermata('lobby');
   }, 2000);

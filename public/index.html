@@ -20,6 +20,13 @@
 
       <div class="bottoni-lobby">
         <div class="form-gruppo">
+          <label>Numero giocatori:</label>
+          <div class="radio-gruppo">
+            <label class="radio-label"><input type="radio" name="numGiocatori" value="2" checked> 2 giocatori</label>
+            <label class="radio-label"><input type="radio" name="numGiocatori" value="4"> 4 giocatori (2v2)</label>
+          </div>
+        </div>
+        <div class="form-gruppo">
           <label for="puntiVittoria">Punti per vincere:</label>
           <select id="puntiVittoria">
             <option value="11">11 punti</option>
@@ -81,9 +88,10 @@
         <span>Codice:</span>
         <strong id="codiceStanzaDisplay"></strong>
       </div>
-      <p>Condividi questo codice con il tuo avversario</p>
+      <p>Condividi questo codice con gli altri giocatori</p>
+      <div id="giocatoriConnessi" class="giocatori-connessi"></div>
       <div class="loader"></div>
-      <p>In attesa dell'avversario...</p>
+      <p id="attesaMessaggio">In attesa degli altri giocatori...</p>
     </div>
 
     <!-- Schermata Gioco -->
@@ -92,7 +100,6 @@
         <div class="info-giocatore avversario">
           <span class="nome" id="nomeAvversario">Avversario</span>
           <span class="punti">Punti: <strong id="puntiAvversario">0</strong></span>
-          <span class="carte-info">Carte: <span id="carteAvversario">0</span></span>
         </div>
         <div class="info-centro">
           <span id="turnoIndicatore">Turno avversario</span>
@@ -105,14 +112,8 @@
         </div>
       </div>
 
-      <div class="area-avversario-container">
-        <div class="area-avversario">
-          <div id="manoAvversario" class="mano-carte dorso"></div>
-        </div>
-        <div class="area-prese avversario">
-          <h4>Prese avversario</h4>
-          <div id="mazzoPreseAvversario" class="mazzo-prese"></div>
-        </div>
+      <div id="areaAvversarioContainer" class="area-avversario-container">
+        <!-- Popolato dinamicamente da JS -->
       </div>
 
       <div class="tavolo-container">

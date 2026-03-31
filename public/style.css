@@ -765,6 +765,83 @@ body {
   color: #a8d5a2;
 }
 
+/* Radio gruppo giocatori */
+.radio-gruppo {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.radio-label {
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  transition: background 0.2s;
+}
+
+.radio-label:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.radio-label input[type="radio"] {
+  margin-right: 6px;
+}
+
+/* Giocatori connessi nella schermata attesa */
+.giocatori-connessi {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.giocatore-connesso {
+  background: rgba(212, 175, 55, 0.3);
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  color: #d4af37;
+}
+
+/* Altri giocatori (area dinamica) */
+.altri-giocatori-mani {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex: 1;
+}
+
+.area-altro-giocatore {
+  text-align: center;
+}
+
+.area-altro-giocatore .nome-altro {
+  font-size: 0.9em;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #ff9999;
+}
+
+.area-altro-giocatore .nome-altro.compagno-label {
+  color: #a8d5a2;
+}
+
+.area-altro-giocatore.compagno .nome-altro {
+  color: #a8d5a2;
+}
+
+.area-altro-giocatore .mano-carte {
+  min-height: auto;
+}
+
+.area-altro-giocatore .carta {
+  width: 50px;
+  height: 87px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .carta {
@@ -786,6 +863,17 @@ body {
   .area-avversario-container {
     flex-direction: column;
     align-items: center;
+  }
+
+  .altri-giocatori-mani {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .area-altro-giocatore .carta {
+    width: 40px;
+    height: 70px;
   }
 
   .area-prese {

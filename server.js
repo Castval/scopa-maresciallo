@@ -33,12 +33,13 @@ io.on('connection', (socket) => {
   socket.on('richiediStanzeDisponibili', () => {
     const stanzeDisponibili = [];
     for (const [codice, partita] of stanze) {
-      // Stanza disponibile se ha solo 1 giocatore
-      if (partita.giocatori.length === 1 && partita.stato === 'attesa') {
+      if (partita.giocatori.length < partita.maxGiocatori && partita.stato === 'attesa') {
         stanzeDisponibili.push({
           codice: codice,
           creatore: partita.giocatori[0].nome,
-          puntiVittoria: partita.puntiVittoria
+          puntiVittoria: partita.puntiVittoria,
+          numGiocatori: partita.maxGiocatori,
+          giocatoriConnessi: partita.giocatori.length
         });
       }
     }
@@ -46,10 +47,11 @@ io.on('connection', (socket) => {
   });
 
   // Crea nuova stanza
-  socket.on('creaStanza', ({ nome, puntiVittoria }) => {
+  socket.on('creaStanza', ({ nome, puntiVittoria, numGiocatori }) => {
     const codice = generaCodiceStanza();
     const punti = [11, 21, 31, 41, 51].includes(puntiVittoria) ? puntiVittoria : 31;
-    const partita = new ScopaMaresciallo(codice, punti);
+    const num = [2, 4].includes(numGiocatori) ? numGiocatori : 2;
+    const partita = new ScopaMaresciallo(codice, punti, num);
     partita.aggiungiGiocatore(socket.id, nome);
 
     stanze.set(codice, partita);
@@ -57,8 +59,8 @@ io.on('connection', (socket) => {
     socket.codiceStanza = codice;
     socket.nomeGiocatore = nome;
 
-    socket.emit('stanzaCreata', { codice, nome });
-    console.log(`Stanza ${codice} creata da ${nome}`);
+    socket.emit('stanzaCreata', { codice, nome, numGiocatori: num });
+    console.log(`Stanza ${codice} creata da ${nome} (${num} giocatori)`);
   });
 
   // Unisciti a stanza esistente
@@ -70,7 +72,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (partita.giocatori.length >= 2) {
+    if (partita.giocatori.length >= partita.maxGiocatori) {
       socket.emit('errore', 'Stanza piena');
       return;
     }
@@ -82,21 +84,21 @@ io.on('connection', (socket) => {
 
     socket.emit('unitoAStanza', { codice, nome });
 
-    // Notifica entrambi i giocatori
+    // Notifica tutti i giocatori nella stanza
     io.to(codice).emit('giocatoreUnito', {
-      giocatori: partita.giocatori.map(g => ({ id: g.id, nome: g.nome }))
+      giocatori: partita.giocatori.map(g => ({ id: g.id, nome: g.nome })),
+      maxGiocatori: partita.maxGiocatori
     });
 
-    // Inizia la partita
-    if (partita.giocatori.length === 2) {
+    // Inizia la partita quando la stanza è piena
+    if (partita.giocatori.length === partita.maxGiocatori) {
       partita.iniziaPartita();
 
-      // Invia stato a ciascun giocatore
       for (const g of partita.giocatori) {
         io.to(g.id).emit('partitaIniziata', partita.getStato(g.id));
       }
 
-      console.log(`Partita iniziata nella stanza ${codice}`);
+      console.log(`Partita iniziata nella stanza ${codice} (${partita.maxGiocatori} giocatori)`);
     }
   });
 
@@ -133,15 +135,15 @@ io.on('connection', (socket) => {
 
       for (const g of partita.giocatori) {
         const stato = partita.getStato(g.id);
-        const avversario = partita.giocatori.find(p => p.id !== g.id);
+        const sqMia = partita.getSquadraDelGiocatore(g.id);
+        const sqAvv = 1 - sqMia;
         io.to(g.id).emit('fineRound', {
           stato,
           puntiRound,
-          dettagliGiocatore: dettagliPunti[g.id],
-          dettagliAvversario: dettagliPunti[avversario.id],
+          dettagliGiocatore: dettagliPunti[sqMia],
+          dettagliAvversario: dettagliPunti[sqAvv],
           finePartita: partita.stato === 'finePartita',
-          vincitore: partita.stato === 'finePartita' ?
-            partita.giocatori.find(p => p.puntiTotali >= partita.puntiVittoria)?.nome : null,
+          vincitore: partita.stato === 'finePartita' ? partita.getVincitore() : null,
           cartaGiocata: cartaInfo,
           giocatoreId: socket.id
         });
@@ -234,7 +236,7 @@ io.on('connection', (socket) => {
 
     partita.rimuoviGiocatore(socket.id);
 
-    // Notifica l'altro giocatore
+    // Notifica gli altri giocatori
     io.to(codice).emit('avversarioDisconnesso');
 
     // Se la stanza è vuota, eliminala

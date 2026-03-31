@@ -107,7 +107,7 @@ class Giocatore {
 }
 
 class ScopaMaresciallo {
-  constructor(roomId, puntiVittoria = 31) {
+  constructor(roomId, puntiVittoria = 31, maxGiocatori = 2) {
     this.roomId = roomId;
     this.mazzo = new Mazzo();
     this.giocatori = [];
@@ -116,10 +116,11 @@ class ScopaMaresciallo {
     this.stato = 'attesa'; // attesa, inCorso, fineRound, finePartita
     this.ultimoAPrendere = null;
     this.puntiVittoria = puntiVittoria;
+    this.maxGiocatori = maxGiocatori;
   }
 
   aggiungiGiocatore(id, nome) {
-    if (this.giocatori.length >= 2) return false;
+    if (this.giocatori.length >= this.maxGiocatori) return false;
     this.giocatori.push(new Giocatore(id, nome));
     return true;
   }
@@ -129,10 +130,40 @@ class ScopaMaresciallo {
   }
 
   iniziaPartita() {
-    if (this.giocatori.length !== 2) return false;
+    if (this.giocatori.length !== this.maxGiocatori) return false;
     this.stato = 'inCorso';
     this.iniziaRound();
     return true;
+  }
+
+  // Restituisce le due squadre per il calcolo punti
+  // In 2 giocatori: ogni giocatore è una squadra
+  // In 4 giocatori: squadra 0 = giocatori 0,2 | squadra 1 = giocatori 1,3
+  getSquadre() {
+    if (this.maxGiocatori === 2) {
+      return [
+        { id: 0, giocatori: [this.giocatori[0]], prese: this.giocatori[0].prese, scope: this.giocatori[0].scope },
+        { id: 1, giocatori: [this.giocatori[1]], prese: this.giocatori[1].prese, scope: this.giocatori[1].scope }
+      ];
+    }
+    const team0 = [this.giocatori[0], this.giocatori[2]];
+    const team1 = [this.giocatori[1], this.giocatori[3]];
+    return [
+      { id: 0, giocatori: team0, prese: [...team0[0].prese, ...team0[1].prese], scope: [...team0[0].scope, ...team0[1].scope] },
+      { id: 1, giocatori: team1, prese: [...team1[0].prese, ...team1[1].prese], scope: [...team1[0].scope, ...team1[1].scope] }
+    ];
+  }
+
+  getSquadraDelGiocatore(giocatoreId) {
+    const idx = this.giocatori.findIndex(g => g.id === giocatoreId);
+    return this.maxGiocatori === 2 ? idx : idx % 2;
+  }
+
+  getVincitore() {
+    const squadre = this.getSquadre();
+    const vincitrice = squadre.find(sq => sq.giocatori[0].puntiTotali >= this.puntiVittoria);
+    if (!vincitrice) return null;
+    return vincitrice.giocatori.map(g => g.nome).join(' & ');
   }
 
   iniziaRound() {
@@ -344,7 +375,7 @@ class ScopaMaresciallo {
     }
 
     // Prossimo turno
-    this.turnoCorrente = (this.turnoCorrente + 1) % 2;
+    this.turnoCorrente = (this.turnoCorrente + 1) % this.giocatori.length;
 
     // Controlla se le mani sono vuote
     const maniVuote = this.giocatori.every(g => g.mano.length === 0);
@@ -378,33 +409,29 @@ class ScopaMaresciallo {
       g.puntiTotali += puntiRound[g.id];
     }
 
-    // Controlla vittoria
-    const g1 = this.giocatori[0];
-    const g2 = this.giocatori[1];
+    // Controlla vittoria usando punteggi squadra
+    const squadre = this.getSquadre();
+    const sq0Score = squadre[0].giocatori[0].puntiTotali;
+    const sq1Score = squadre[1].giocatori[0].puntiTotali;
 
-    const g1Vince = g1.puntiTotali >= this.puntiVittoria;
-    const g2Vince = g2.puntiTotali >= this.puntiVittoria;
+    const sq0Vince = sq0Score >= this.puntiVittoria;
+    const sq1Vince = sq1Score >= this.puntiVittoria;
 
-    if (g1Vince || g2Vince) {
-      // Se entrambi hanno raggiunto 31, vince chi ha più punti
-      // Se sono pari, si continua a giocare
-      if (g1Vince && g2Vince) {
-        if (g1.puntiTotali > g2.puntiTotali) {
+    if (sq0Vince || sq1Vince) {
+      if (sq0Vince && sq1Vince) {
+        if (sq0Score > sq1Score) {
           this.stato = 'finePartita';
-          return { finePartita: true, vincitore: g1.id, puntiRound };
-        } else if (g2.puntiTotali > g1.puntiTotali) {
+          return { finePartita: true, puntiRound };
+        } else if (sq1Score > sq0Score) {
           this.stato = 'finePartita';
-          return { finePartita: true, vincitore: g2.id, puntiRound };
+          return { finePartita: true, puntiRound };
         } else {
-          // Pareggio a 31 o più: si continua a giocare
           this.stato = 'fineRound';
           return { finePartita: false, puntiRound, pareggio: true };
         }
       } else {
-        // Solo uno ha raggiunto 31
-        const vincitore = g1Vince ? g1 : g2;
         this.stato = 'finePartita';
-        return { finePartita: true, vincitore: vincitore.id, puntiRound };
+        return { finePartita: true, puntiRound };
       }
     }
 
@@ -413,117 +440,112 @@ class ScopaMaresciallo {
   }
 
   calcolaPuntiRound() {
-    const punti = {};
-
-    for (const g of this.giocatori) {
-      punti[g.id] = 0;
-    }
-
-    const g1 = this.giocatori[0];
-    const g2 = this.giocatori[1];
+    const squadre = this.getSquadre();
+    const puntiSquadre = { 0: 0, 1: 0 };
 
     // Scope
-    for (const g of this.giocatori) {
-      for (const scopa of g.scope) {
-        punti[g.id] += scopa.valore;
+    for (const sq of squadre) {
+      for (const scopa of sq.scope) {
+        puntiSquadre[sq.id] += scopa.valore;
       }
     }
 
     // Marescialli (-1 punto per ogni maresciallo preso)
-    // Eccezione: se scopa maresciallo con maresciallo, nessuna penalità
-    for (const g of this.giocatori) {
-      const marescialli = g.prese.filter(c => c.valore === 10 && c.seme === 'spade').length;
-      // Marescialli già contati nelle scope (sia -4 che +10)
-      const marescialliScopaNegativa = g.scope.filter(s => s.valore === -4).length;
-      const marescialliScopaPositiva = g.scope.filter(s => s.marescialloConMaresciallo).length * 2; // Prende 2 marescialli
-      const marescialliConPenalita = marescialli - marescialliScopaNegativa - marescialliScopaPositiva;
-      punti[g.id] -= Math.max(0, marescialliConPenalita);
+    for (const sq of squadre) {
+      const marescialli = sq.prese.filter(c => c.valore === 10 && c.seme === 'spade').length;
+      const scopeNeg = sq.scope.filter(s => s.valore === -4).length;
+      const scopePos = sq.scope.filter(s => s.marescialloConMaresciallo).length * 2;
+      const conPenalita = marescialli - scopeNeg - scopePos;
+      puntiSquadre[sq.id] -= Math.max(0, conPenalita);
     }
 
     // Più carte di denari
-    const denariG1 = g1.prese.filter(c => c.seme === 'denari').length;
-    const denariG2 = g2.prese.filter(c => c.seme === 'denari').length;
-    if (denariG1 > denariG2) punti[g1.id]++;
-    else if (denariG2 > denariG1) punti[g2.id]++;
+    const denari0 = squadre[0].prese.filter(c => c.seme === 'denari').length;
+    const denari1 = squadre[1].prese.filter(c => c.seme === 'denari').length;
+    if (denari0 > denari1) puntiSquadre[0]++;
+    else if (denari1 > denari0) puntiSquadre[1]++;
 
     // Più carte totali
-    if (g1.prese.length > g2.prese.length) punti[g1.id]++;
-    else if (g2.prese.length > g1.prese.length) punti[g2.id]++;
+    if (squadre[0].prese.length > squadre[1].prese.length) puntiSquadre[0]++;
+    else if (squadre[1].prese.length > squadre[0].prese.length) puntiSquadre[1]++;
 
-    // Settebello (può valere 2 volte)
-    for (const g of this.giocatori) {
-      const settebelli = g.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
-      punti[g.id] += settebelli;
+    // Settebello
+    for (const sq of squadre) {
+      puntiSquadre[sq.id] += sq.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
     }
 
-    // Otto di denari (1 punto per ogni 8 di denari se si ha anche il settebello)
-    for (const g of this.giocatori) {
-      const settebelli = g.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
-      const ottoDenari = g.prese.filter(c => c.valore === 8 && c.seme === 'denari').length;
-      // Il bonus è il minimo tra settebelli e otto di denari
-      punti[g.id] += Math.min(settebelli, ottoDenari);
+    // Otto di denari
+    for (const sq of squadre) {
+      const sett = sq.prese.filter(c => c.valore === 7 && c.seme === 'denari').length;
+      const otto = sq.prese.filter(c => c.valore === 8 && c.seme === 'denari').length;
+      puntiSquadre[sq.id] += Math.min(sett, otto);
     }
 
     // Primiera
-    const primieraG1 = this.calcolaPrimiera(g1.prese);
-    const primieraG2 = this.calcolaPrimiera(g2.prese);
-    if (primieraG1 > primieraG2) punti[g1.id]++;
-    else if (primieraG2 > primieraG1) punti[g2.id]++;
+    const p0 = this.calcolaPrimiera(squadre[0].prese);
+    const p1 = this.calcolaPrimiera(squadre[1].prese);
+    if (p0 > p1) puntiSquadre[0]++;
+    else if (p1 > p0) puntiSquadre[1]++;
 
-    // Napola (può valere 2 volte)
+    // Napola
+    for (const sq of squadre) {
+      puntiSquadre[sq.id] += this.calcolaNapola(sq.prese);
+    }
+
+    // Mappa punti squadra ai singoli giocatori
+    const punti = {};
     for (const g of this.giocatori) {
-      punti[g.id] += this.calcolaNapola(g.prese);
+      const sqId = this.getSquadraDelGiocatore(g.id);
+      punti[g.id] = puntiSquadre[sqId];
     }
 
     return punti;
   }
 
+  // Restituisce dettagli punti per squadra: { 0: {...}, 1: {...} }
   calcolaPuntiRoundDettagliato() {
+    const squadre = this.getSquadre();
     const dettagli = {};
-    const g1 = this.giocatori[0];
-    const g2 = this.giocatori[1];
 
-    for (const g of this.giocatori) {
+    for (const sq of squadre) {
       // Calcola scope (solo valori positivi: +1, +3, +10)
       let scopePunti = 0;
       const carteScope = [];
-      for (const scopa of g.scope) {
+      for (const scopa of sq.scope) {
         if (scopa.valore > 0) {
           scopePunti += scopa.valore;
-          // Estrai info carta dalla stringa id "valore_seme_mazzoId"
           const parti = scopa.carta.split('_');
           carteScope.push({ valore: parseInt(parti[0]), seme: parti[1], punti: scopa.valore });
         }
       }
 
-      // Marescialli: conta la penalità totale
-      const carteMarescialli = g.prese.filter(c => c.valore === 10 && c.seme === 'spade');
+      // Marescialli
+      const carteMarescialli = sq.prese.filter(c => c.valore === 10 && c.seme === 'spade');
       const marescialli = carteMarescialli.length;
-      const scopeMarescialloNegative = g.scope.filter(s => s.valore === -4).length;
-      const marescialliScopaPositiva = g.scope.filter(s => s.marescialloConMaresciallo).length * 2;
-      const marescialliNormali = Math.max(0, marescialli - scopeMarescialloNegative - marescialliScopaPositiva);
-      const penalitaTotale = marescialliNormali + (scopeMarescialloNegative * 4);
+      const scopeNeg = sq.scope.filter(s => s.valore === -4).length;
+      const scopePos = sq.scope.filter(s => s.marescialloConMaresciallo).length * 2;
+      const marescialliNormali = Math.max(0, marescialli - scopeNeg - scopePos);
+      const penalitaTotale = marescialliNormali + (scopeNeg * 4);
 
       // Settebello
-      const carteSettebello = g.prese.filter(c => c.valore === 7 && c.seme === 'denari');
+      const carteSettebello = sq.prese.filter(c => c.valore === 7 && c.seme === 'denari');
       const settebelli = carteSettebello.length;
 
       // Otto di denari
-      const carteOttoDenari = g.prese.filter(c => c.valore === 8 && c.seme === 'denari');
-      const ottoDenari = carteOttoDenari.length;
-      const bonusOtto = Math.min(settebelli, ottoDenari);
+      const carteOttoDenari = sq.prese.filter(c => c.valore === 8 && c.seme === 'denari');
+      const bonusOtto = Math.min(settebelli, carteOttoDenari.length);
 
       // Napola
-      const napolaPunti = this.calcolaNapola(g.prese);
-      const carteNapola = this.getCarteNapola(g.prese);
+      const napolaPunti = this.calcolaNapola(sq.prese);
+      const carteNapola = this.getCarteNapola(sq.prese);
 
       // Carte primiera
-      const cartePrimiera = this.getCartePrimiera(g.prese);
+      const cartePrimiera = this.getCartePrimiera(sq.prese);
 
-      dettagli[g.id] = {
-        nome: g.nome,
+      dettagli[sq.id] = {
+        nome: sq.giocatori.map(g => g.nome).join(' & '),
         scope: scopePunti,
-        numScope: g.scope.length,
+        numScope: sq.scope.length,
         carteScope: carteScope,
         marescialli: -penalitaTotale,
         carteMarescialli: carteMarescialli.map(c => ({ valore: c.valore, seme: c.seme })),
@@ -534,9 +556,9 @@ class ScopaMaresciallo {
         napola: napolaPunti,
         carteNapola: carteNapola,
         denari: 0,
-        numDenari: g.prese.filter(c => c.seme === 'denari').length,
+        numDenari: sq.prese.filter(c => c.seme === 'denari').length,
         carte: 0,
-        numCarte: g.prese.length,
+        numCarte: sq.prese.length,
         primiera: 0,
         cartePrimiera: cartePrimiera,
         totale: 0
@@ -544,24 +566,24 @@ class ScopaMaresciallo {
     }
 
     // Più carte di denari
-    const denariG1 = g1.prese.filter(c => c.seme === 'denari').length;
-    const denariG2 = g2.prese.filter(c => c.seme === 'denari').length;
-    if (denariG1 > denariG2) dettagli[g1.id].denari = 1;
-    else if (denariG2 > denariG1) dettagli[g2.id].denari = 1;
+    const denari0 = squadre[0].prese.filter(c => c.seme === 'denari').length;
+    const denari1 = squadre[1].prese.filter(c => c.seme === 'denari').length;
+    if (denari0 > denari1) dettagli[0].denari = 1;
+    else if (denari1 > denari0) dettagli[1].denari = 1;
 
     // Più carte totali
-    if (g1.prese.length > g2.prese.length) dettagli[g1.id].carte = 1;
-    else if (g2.prese.length > g1.prese.length) dettagli[g2.id].carte = 1;
+    if (squadre[0].prese.length > squadre[1].prese.length) dettagli[0].carte = 1;
+    else if (squadre[1].prese.length > squadre[0].prese.length) dettagli[1].carte = 1;
 
     // Primiera
-    const primieraG1 = this.calcolaPrimiera(g1.prese);
-    const primieraG2 = this.calcolaPrimiera(g2.prese);
-    if (primieraG1 > primieraG2) dettagli[g1.id].primiera = 1;
-    else if (primieraG2 > primieraG1) dettagli[g2.id].primiera = 1;
+    const p0 = this.calcolaPrimiera(squadre[0].prese);
+    const p1 = this.calcolaPrimiera(squadre[1].prese);
+    if (p0 > p1) dettagli[0].primiera = 1;
+    else if (p1 > p0) dettagli[1].primiera = 1;
 
     // Calcola totali
-    for (const g of this.giocatori) {
-      const d = dettagli[g.id];
+    for (const sq of squadre) {
+      const d = dettagli[sq.id];
       d.totale = d.scope + d.marescialli + d.settebello + d.ottoDenari + d.napola + d.denari + d.carte + d.primiera;
     }
 
@@ -676,7 +698,7 @@ class ScopaMaresciallo {
 
   nuovoRound() {
     if (this.stato !== 'fineRound') return false;
-    this.turnoCorrente = (this.turnoCorrente + 1) % 2; // Alterna chi inizia
+    this.turnoCorrente = (this.turnoCorrente + 1) % this.giocatori.length;
     this.iniziaRound();
     this.stato = 'inCorso';
     return true;
@@ -684,25 +706,66 @@ class ScopaMaresciallo {
 
   getStato(giocatoreId) {
     const giocatore = this.giocatori.find(g => g.id === giocatoreId);
-    const avversario = this.giocatori.find(g => g.id !== giocatoreId);
+    const giocatoreIdx = this.giocatori.findIndex(g => g.id === giocatoreId);
 
-    return {
+    const base = {
       roomId: this.roomId,
       stato: this.stato,
       tavolo: this.tavolo,
       manoGiocatore: giocatore ? giocatore.mano : [],
-      carteAvversario: avversario ? avversario.mano.length : 0,
-      preseGiocatore: giocatore ? giocatore.prese.length : 0,
-      preseAvversario: avversario ? avversario.prese.length : 0,
-      scopeGiocatore: giocatore ? giocatore.scope : [],
-      scopeAvversario: avversario ? avversario.scope : [],
-      puntiGiocatore: giocatore ? giocatore.puntiTotali : 0,
-      puntiAvversario: avversario ? avversario.puntiTotali : 0,
       nomeGiocatore: giocatore ? giocatore.nome : '',
-      nomeAvversario: avversario ? avversario.nome : '',
       turnoMio: this.getGiocatoreCorrente()?.id === giocatoreId,
+      turnoNome: this.getGiocatoreCorrente()?.nome || '',
       carteRimanenti: this.mazzo.rimanenti(),
-      puntiVittoria: this.puntiVittoria
+      puntiVittoria: this.puntiVittoria,
+      numGiocatori: this.maxGiocatori
+    };
+
+    if (this.maxGiocatori === 2) {
+      const avversario = this.giocatori.find(g => g.id !== giocatoreId);
+      return {
+        ...base,
+        preseGiocatore: giocatore ? giocatore.prese.length : 0,
+        preseAvversario: avversario ? avversario.prese.length : 0,
+        scopeGiocatore: giocatore ? giocatore.scope : [],
+        scopeAvversario: avversario ? avversario.scope : [],
+        puntiGiocatore: giocatore ? giocatore.puntiTotali : 0,
+        puntiAvversario: avversario ? avversario.puntiTotali : 0,
+        nomeAvversario: avversario ? avversario.nome : '',
+        altriGiocatori: avversario ? [{ nome: avversario.nome, carte: avversario.mano.length, tipo: 'avversario' }] : []
+      };
+    }
+
+    // 4 giocatori - squadre
+    const squadra = giocatoreIdx % 2;
+    const compagnoIdx = (giocatoreIdx + 2) % 4;
+    const compagno = this.giocatori[compagnoIdx];
+
+    // Avversari: gli altri due giocatori (squadra opposta)
+    const avversari = this.giocatori.filter((g, i) => i % 2 !== squadra);
+
+    const preseSquadra = (giocatore?.prese.length || 0) + (compagno?.prese.length || 0);
+    const scopeSquadra = [...(giocatore?.scope || []), ...(compagno?.scope || [])];
+    const preseAvv = avversari.reduce((sum, a) => sum + a.prese.length, 0);
+    const scopeAvv = avversari.flatMap(a => a.scope);
+
+    return {
+      ...base,
+      puntiGiocatore: giocatore ? giocatore.puntiTotali : 0,
+      puntiAvversario: avversari[0] ? avversari[0].puntiTotali : 0,
+      preseGiocatore: preseSquadra,
+      preseAvversario: preseAvv,
+      scopeGiocatore: scopeSquadra,
+      scopeAvversario: scopeAvv,
+      nomeAvversario: avversari.map(a => a.nome).join(' & '),
+      nomeCompagno: compagno?.nome || '',
+      nomeSquadra: `${giocatore?.nome || ''} & ${compagno?.nome || ''}`,
+      nomeSquadraAvversaria: avversari.map(a => a.nome).join(' & '),
+      altriGiocatori: [
+        { nome: avversari[0]?.nome || '', carte: avversari[0]?.mano.length || 0, tipo: 'avversario' },
+        { nome: compagno?.nome || '', carte: compagno?.mano.length || 0, tipo: 'compagno' },
+        { nome: avversari[1]?.nome || '', carte: avversari[1]?.mano.length || 0, tipo: 'avversario' }
+      ]
     };
   }
 }
