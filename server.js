@@ -46,6 +46,18 @@ app.post('/api/eliminaaccount', (req, res) => {
   res.json(db.cancellaUtente(nome));
 });
 
+// --- API Amici ---
+app.get('/api/amici/:nome', (req, res) => { res.json({ ok: true, amici: db.getAmici(req.params.nome), richieste: db.getRichiesteAmicizia(req.params.nome) }); });
+app.post('/api/amici/richiedi', (req, res) => { const r = db.richiediAmicizia(req.body.utente, req.body.amico); if (r.ok) for (const [, s] of io.sockets.sockets) if (s.nomeGiocatore === req.body.amico) io.to(s.id).emit('richiestaAmicizia', { da: req.body.utente }); res.json(r); });
+app.post('/api/amici/accetta', (req, res) => { const r = db.accettaAmicizia(req.body.utente, req.body.amico); if (r.ok) for (const [, s] of io.sockets.sockets) if (s.nomeGiocatore === req.body.amico) io.to(s.id).emit('amiciziaAccettata', { da: req.body.utente }); res.json(r); });
+app.post('/api/amici/rifiuta', (req, res) => { res.json(db.rifiutaAmicizia(req.body.utente, req.body.amico)); });
+app.post('/api/amici/rimuovi', (req, res) => { res.json(db.rimuoviAmico(req.body.utente, req.body.amico)); });
+app.get('/api/amici/:nome/online', (req, res) => {
+  const amici = db.getAmici(req.params.nome).map(a => a.nome); const online = {};
+  for (const a of amici) { online[a] = { online: false, stanza: null }; for (const [, s] of io.sockets.sockets) if (s.nomeGiocatore === a) { online[a] = { online: true, stanza: s.codiceStanza || null }; break; } }
+  res.json({ ok: true, online });
+});
+
 // --- API Torneo ---
 app.get('/api/torneo/attivo', (req, res) => {
   const t = torneo.getTorneoAttivo();
@@ -167,6 +179,7 @@ function avviaPartitePronteTorneo(torneoId) {
 // Stanze di gioco
 const stanze = new Map();
 const disconnessioniPendenti = new Map();
+const chatLobbyMessaggi = [];
 
 // Genera codice stanza
 function generaCodiceStanza() {
@@ -182,6 +195,19 @@ io.on('connection', (socket) => {
   console.log(`Giocatore connesso: ${socket.id}`);
 
   socket.on('autenticato', ({ nome }) => { if (nome) socket.nomeGiocatore = nome; });
+
+  socket.on('chatLobbyMessaggio', ({ testo }) => {
+    if (!socket.nomeGiocatore || !testo || !testo.trim()) return;
+    const msg = { nome: socket.nomeGiocatore, testo: testo.trim().slice(0, 200), timestamp: Date.now() };
+    chatLobbyMessaggi.push(msg); if (chatLobbyMessaggi.length > 50) chatLobbyMessaggi.shift();
+    for (const [, s] of io.sockets.sockets) if (s.nomeGiocatore && !s.codiceStanza) io.to(s.id).emit('chatLobbyMessaggio', msg);
+  });
+  socket.on('chatLobbyStoria', () => socket.emit('chatLobbyStoria', chatLobbyMessaggi));
+
+  socket.on('invitaAmico', ({ amico, codiceStanza }) => {
+    if (!socket.nomeGiocatore || !amico || !codiceStanza) return;
+    for (const [, s] of io.sockets.sockets) if (s.nomeGiocatore === amico) io.to(s.id).emit('invitoStanza', { da: socket.nomeGiocatore, codiceStanza });
+  });
 
   socket.on('uniscitiPartitaTorneo', ({ codiceStanza, nome }) => {
     const partita = stanze.get(codiceStanza);
