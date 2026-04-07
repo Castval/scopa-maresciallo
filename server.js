@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { ScopaMaresciallo } = require('./game-logic');
+const db = require('./db');
+const torneo = require('./tournament');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,8 +12,157 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// --- API Auth ---
+app.post('/api/registra', (req, res) => {
+  const { nome, email, password } = req.body;
+  res.json(db.registra(nome, email, password));
+});
+app.post('/api/login', (req, res) => {
+  const { nome, password } = req.body;
+  res.json(db.login(nome, password));
+});
+app.get('/api/stats/:nome', (req, res) => {
+  const stats = db.getStats(req.params.nome);
+  if (!stats) return res.json({ ok: false, errore: 'Utente non trovato' });
+  res.json({ ok: true, stats });
+});
+app.get('/api/classifica', (req, res) => {
+  res.json({ ok: true, classifica: db.getClassifica() });
+});
+app.get('/api/isadmin/:nome', (req, res) => {
+  res.json({ ok: true, admin: db.isAdmin(req.params.nome) });
+});
+app.post('/api/cambiapassword', (req, res) => {
+  const { nome, nuovaPassword } = req.body;
+  if (!nome || !nuovaPassword) return res.json({ ok: false, errore: 'Dati mancanti' });
+  res.json(db.cambiaPassword(nome, nuovaPassword));
+});
+app.post('/api/eliminaaccount', (req, res) => {
+  const { nome } = req.body;
+  if (!nome) return res.json({ ok: false, errore: 'Dati mancanti' });
+  res.json(db.cancellaUtente(nome));
+});
+
+// --- API Torneo ---
+app.get('/api/torneo/attivo', (req, res) => {
+  const t = torneo.getTorneoAttivo();
+  if (!t) return res.json({ ok: true, torneo: null });
+  if (t.stato === 'iscrizioni') res.json({ ok: true, torneo: torneo.getIscrizioni(t.id) });
+  else res.json({ ok: true, torneo: torneo.getTabellone(t.id) });
+});
+app.get('/api/torneo/:id/tabellone', (req, res) => {
+  const tab = torneo.getTabellone(parseInt(req.params.id));
+  if (!tab) return res.json({ ok: false, errore: 'Torneo non trovato' });
+  res.json({ ok: true, torneo: tab });
+});
+app.post('/api/torneo/iscriviti', (req, res) => {
+  const { torneoId, nome, numeroSquadra } = req.body;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  const risultato = torneo.iscriviGiocatore(torneoId, nome, ip, numeroSquadra);
+  if (risultato.ok && risultato.torneoIniziato) {
+    io.emit('torneoIniziato', { torneoId });
+    avviaPartitePronteTorneo(torneoId);
+  } else if (risultato.ok) {
+    io.emit('torneoAggiornato', { torneoId });
+  }
+  res.json(risultato);
+});
+app.post('/api/torneo/lascia', (req, res) => {
+  const { torneoId, nome } = req.body;
+  const risultato = torneo.rimuoviIscrizione(torneoId, nome);
+  if (risultato.ok) io.emit('torneoAggiornato', { torneoId });
+  res.json(risultato);
+});
+
+// --- API Admin ---
+app.post('/api/admin/resetpassword', (req, res) => {
+  const { admin, nome } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  res.json(db.resetPassword(nome));
+});
+app.post('/api/admin/cancellautente', (req, res) => {
+  const { admin, nome } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  res.json(db.cancellaUtente(nome));
+});
+app.get('/api/admin/utenti', (req, res) => {
+  const nome = req.query.nome;
+  if (!nome || !db.isAdmin(nome)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  res.json({ ok: true, utenti: db.getTuttiUtenti() });
+});
+app.get('/api/admin/online', (req, res) => {
+  const nome = req.query.nome;
+  if (!nome || !db.isAdmin(nome)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  const utentiOnline = [];
+  for (const [, s] of io.sockets.sockets) {
+    if (s.nomeGiocatore) {
+      const ip = s.handshake.headers['x-forwarded-for']?.split(',')[0]?.trim() || s.handshake.address;
+      utentiOnline.push({ nome: s.nomeGiocatore, stanza: s.codiceStanza || null, ip });
+    }
+  }
+  const infoStanze = [];
+  for (const [codice, partita] of stanze) {
+    infoStanze.push({ codice, stato: partita.stato, giocatori: partita.giocatori.map(g => ({ nome: g.nome, disconnesso: g.disconnesso || false })), numGiocatori: partita.maxGiocatori });
+  }
+  res.json({ ok: true, utentiOnline, stanze: infoStanze });
+});
+app.post('/api/admin/torneo/crea', (req, res) => {
+  const { admin, nome, numGiocatori, modalitaVittoria, valoreVittoria, controlloIp } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  const risultato = torneo.creaTorneo(nome, numGiocatori, modalitaVittoria || 'punti', valoreVittoria || 31, controlloIp !== false);
+  if (risultato.ok) io.emit('torneoDisponibile', { torneoId: risultato.torneoId });
+  res.json(risultato);
+});
+app.post('/api/admin/torneo/annulla', (req, res) => {
+  const { admin, torneoId } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  const risultato = torneo.annullaTorneo(torneoId);
+  if (risultato.ok) io.emit('torneoAnnullato', { torneoId });
+  res.json(risultato);
+});
+app.post('/api/admin/torneo/assegna', (req, res) => {
+  const { admin, torneoId, nomeUtente, numeroSquadra } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  const risultato = torneo.iscriviGiocatoreInSquadra(torneoId, nomeUtente, numeroSquadra, null);
+  if (risultato.ok && risultato.torneoIniziato) { io.emit('torneoIniziato', { torneoId }); avviaPartitePronteTorneo(torneoId); }
+  else if (risultato.ok) io.emit('torneoAggiornato', { torneoId });
+  res.json(risultato);
+});
+app.post('/api/admin/torneo/sposta', (req, res) => {
+  const { admin, torneoId, nomeUtente, numeroSquadra } = req.body;
+  if (!admin || !db.isAdmin(admin)) return res.status(403).json({ ok: false, errore: 'Non autorizzato' });
+  const risultato = torneo.spostaGiocatore(torneoId, nomeUtente, numeroSquadra);
+  if (risultato.ok) io.emit('torneoAggiornato', { torneoId });
+  res.json(risultato);
+});
+
+// Crea stanza per partita torneo
+function creaStanzaTorneo(torneoId, round, posizione) {
+  const tab = torneo.getTabellone(torneoId);
+  if (!tab) return;
+  const roundData = tab.rounds.find(r => r.chiave === round);
+  if (!roundData) return;
+  const partitaData = roundData.partite.find(p => p.posizione === posizione);
+  if (!partitaData || !partitaData.squadraA || !partitaData.squadraB) return;
+  if (partitaData.stato !== 'attesa') return;
+  const codice = 'T' + generaCodiceStanza().slice(1);
+  const partita = new ScopaMaresciallo(codice, tab.valoreVittoria, 2);
+  stanze.set(codice, partita);
+  torneo.setCodiceStanza(torneoId, round, posizione, codice);
+  const tutti = [...partitaData.squadraA.giocatori, ...partitaData.squadraB.giocatori];
+  for (const [, s] of io.sockets.sockets) {
+    if (s.nomeGiocatore && tutti.includes(s.nomeGiocatore)) {
+      io.to(s.id).emit('torneoPartitaPronta', { torneoId, codiceStanza: codice, round, posizione, squadraA: partitaData.squadraA, squadraB: partitaData.squadraB });
+    }
+  }
+}
+function avviaPartitePronteTorneo(torneoId) {
+  const pronte = torneo.getPartitePronte(torneoId);
+  for (const p of pronte) creaStanzaTorneo(torneoId, p.round, p.posizione);
+}
 
 // Stanze di gioco
 const stanze = new Map();
@@ -29,6 +180,29 @@ function generaCodiceStanza() {
 
 io.on('connection', (socket) => {
   console.log(`Giocatore connesso: ${socket.id}`);
+
+  socket.on('autenticato', ({ nome }) => { if (nome) socket.nomeGiocatore = nome; });
+
+  socket.on('uniscitiPartitaTorneo', ({ codiceStanza, nome }) => {
+    const partita = stanze.get(codiceStanza);
+    if (!partita) { socket.emit('errore', 'Stanza torneo non trovata'); return; }
+    const giocatoreEsistente = partita.giocatori.find(g => g.nome === nome);
+    if (giocatoreEsistente) {
+      giocatoreEsistente.id = socket.id;
+      giocatoreEsistente.disconnesso = false;
+      socket.join(codiceStanza); socket.codiceStanza = codiceStanza; socket.nomeGiocatore = nome;
+      if (partita.stato !== 'attesa') socket.emit('partitaIniziata', partita.getStato(socket.id));
+      return;
+    }
+    if (partita.giocatori.length >= partita.maxGiocatori) { socket.emit('errore', 'Stanza piena'); return; }
+    partita.aggiungiGiocatore(socket.id, nome);
+    socket.join(codiceStanza); socket.codiceStanza = codiceStanza; socket.nomeGiocatore = nome;
+    io.to(codiceStanza).emit('giocatoreUnito', { giocatori: partita.giocatori.map(g => ({ id: g.id, nome: g.nome })), maxGiocatori: partita.maxGiocatori });
+    if (partita.giocatori.length === partita.maxGiocatori) {
+      partita.iniziaPartita();
+      for (const g of partita.giocatori) io.to(g.id).emit('partitaIniziata', partita.getStato(g.id));
+    }
+  });
 
   // Richiedi stanze disponibili
   socket.on('richiediStanzeDisponibili', () => {
@@ -162,20 +336,47 @@ io.on('connection', (socket) => {
     if (partita.stato === 'fineRound' || partita.stato === 'finePartita') {
       const puntiRound = partita.calcolaPuntiRound();
       const dettagliPunti = partita.calcolaPuntiRoundDettagliato();
+      const finePartita = partita.stato === 'finePartita';
+      const vincitore = finePartita ? partita.getVincitore() : null;
+
+      // Aggiorna stats a fine partita
+      if (finePartita && !partita._statsAggiornate) {
+        partita._statsAggiornate = true;
+        for (const g of partita.giocatori) {
+          const sqMia = partita.getSquadraDelGiocatore(g.id);
+          if (vincitore === sqMia) {
+            db.aggiornaStats(g.nome, { giocate: 1, vinte: 1, punti: 1 });
+          } else {
+            db.aggiornaStats(g.nome, { giocate: 1, perse: 1, punti: -1 });
+          }
+        }
+        // Gestione torneo
+        const codice = socket.codiceStanza;
+        const partitaTorneo = torneo.getPartitaDaCodice(codice);
+        if (partitaTorneo) {
+          const vincitoreId = vincitore === 0 ? partitaTorneo.squadra_a : partitaTorneo.squadra_b;
+          const ris = torneo.registraRisultato(partitaTorneo.torneo_id, partitaTorneo.round, partitaTorneo.posizione, vincitoreId, 0, 0);
+          if (ris.completato) io.emit('torneoCompletato', { torneoId: partitaTorneo.torneo_id });
+          else { io.emit('torneoAggiornato', { torneoId: partitaTorneo.torneo_id }); if (ris.prossimaPartitaPronta) creaStanzaTorneo(partitaTorneo.torneo_id, ris.round, ris.posizione); }
+        }
+      }
 
       for (const g of partita.giocatori) {
         const stato = partita.getStato(g.id);
         const sqMia = partita.getSquadraDelGiocatore(g.id);
         const sqAvv = 1 - sqMia;
+        const codice = socket.codiceStanza;
+        const partitaTorneo = finePartita ? torneo.getPartitaDaCodice(codice) : null;
         io.to(g.id).emit('fineRound', {
           stato,
           puntiRound,
           dettagliGiocatore: dettagliPunti[sqMia],
           dettagliAvversario: dettagliPunti[sqAvv],
-          finePartita: partita.stato === 'finePartita',
-          vincitore: partita.stato === 'finePartita' ? partita.getVincitore() : null,
+          finePartita,
+          vincitore,
           cartaGiocata: cartaInfo,
-          giocatoreId: socket.id
+          giocatoreId: socket.id,
+          torneo: partitaTorneo ? { torneoId: partitaTorneo.torneo_id, round: partitaTorneo.round, finale: partitaTorneo.round === 'finale' } : null
         });
       }
     } else {
@@ -277,6 +478,18 @@ io.on('connection', (socket) => {
 
       const timer = setTimeout(() => {
         disconnessioniPendenti.delete(chiaveDisc);
+        db.aggiornaStats(nome, { giocate: 1, perse: 1, punti: -1 });
+        for (const g of partita.giocatori) {
+          if (g.nome !== nome) db.aggiornaStats(g.nome, { giocate: 1, vinte: 1, punti: 1 });
+        }
+        const partitaTorneo = torneo.getPartitaDaCodice(codice);
+        if (partitaTorneo) {
+          const sqAvv = partita.giocatori.find(g => g.nome !== nome);
+          const vincitoreId = sqAvv ? (partita.getSquadraDelGiocatore(sqAvv.id) === 0 ? partitaTorneo.squadra_a : partitaTorneo.squadra_b) : partitaTorneo.squadra_b;
+          const ris = torneo.registraRisultato(partitaTorneo.torneo_id, partitaTorneo.round, partitaTorneo.posizione, vincitoreId, 0, 0);
+          if (ris.completato) io.emit('torneoCompletato', { torneoId: partitaTorneo.torneo_id });
+          else { io.emit('torneoAggiornato', { torneoId: partitaTorneo.torneo_id }); if (ris.prossimaPartitaPronta) creaStanzaTorneo(partitaTorneo.torneo_id, ris.round, ris.posizione); }
+        }
         partita.rimuoviGiocatore(giocatore.id);
         io.to(codice).emit('avversarioAbbandonato', { nome });
         console.log(`Giocatore ${nome} rimosso dalla stanza ${codice} (timeout)`);
@@ -302,4 +515,10 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`Server Scopa Maresciallo in esecuzione su http://localhost:${PORT}`);
+  const torneoAttivo = torneo.getTorneoAttivo();
+  if (torneoAttivo && torneoAttivo.stato === 'inCorso') {
+    torneo.resetPartiteInCorso(torneoAttivo.id);
+    avviaPartitePronteTorneo(torneoAttivo.id);
+    console.log(`Torneo "${torneoAttivo.nome}" ripristinato`);
+  }
 });
