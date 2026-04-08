@@ -14,7 +14,7 @@
       <p class="sottotitolo">Gioco di carte con 80 carte napoletane</p>
       <div id="authLogin" class="auth-form">
         <h2>Accedi</h2>
-        <div class="form-gruppo"><input type="text" id="loginNome" placeholder="Nome utente" maxlength="20"></div>
+        <div class="form-gruppo"><input type="text" id="loginNome" placeholder="Nome utente o email"></div>
         <div class="form-gruppo"><input type="password" id="loginPassword" placeholder="Password"></div>
         <button id="btnLogin" class="btn-primario">Accedi</button>
         <p class="auth-switch">Non hai un account? <a href="#" id="mostraRegistra">Registrati</a></p>
@@ -24,6 +24,7 @@
         <div class="form-gruppo"><input type="text" id="regNome" placeholder="Nome utente" maxlength="20"></div>
         <div class="form-gruppo"><input type="email" id="regEmail" placeholder="Email"></div>
         <div class="form-gruppo"><input type="password" id="regPassword" placeholder="Password (min 4 caratteri)"></div>
+        <div class="form-gruppo"><input type="text" id="regCitta" placeholder="Città" maxlength="50"></div>
         <label class="gdpr-checkbox"><input type="checkbox" id="regConsensoPrv"> Ho letto e accetto l'<a href="#" id="linkPrivacyReg">informativa sulla privacy</a></label>
         <button id="btnRegistra" class="btn-primario">Registrati</button>
         <p class="auth-switch">Hai gia un account? <a href="#" id="mostraLogin">Accedi</a></p>
@@ -37,6 +38,36 @@
       </div>
       <div id="messaggioAuth" class="messaggio"></div>
       <p class="auth-footer"><a href="#" id="linkPrivacyAuth">Informativa sulla Privacy</a></p>
+
+      <div class="sezione-regole">
+        <h3>Regole</h3>
+        <div class="regole-contenuto">
+          <p><strong>Mazzo:</strong> 80 carte (2 mazzi napoletani)</p>
+          <p><strong>Distribuzione:</strong> 5 carte a testa, nessuna carta iniziale al tavolo</p>
+
+          <h4>Prese</h4>
+          <ul>
+            <li>L'asso prende tutto (va nelle prese anche se il tavolo è vuoto)</li>
+            <li>Se c'è una carta singola dello stesso valore, devi prenderla (no somme)</li>
+            <li>Non puoi prendere una carta identica (stesso seme e valore) tranne per fare scopa</li>
+          </ul>
+
+          <h4>Punteggi</h4>
+          <ul>
+            <li><strong>Scopa:</strong> 1 punto (3 punti se fatta con carta identica)</li>
+            <li><strong>Maresciallo (10 di spade):</strong> -1 punto se preso, -4 se ci fai scopa</li>
+            <li><strong>Scopa maresciallo con maresciallo:</strong> +10 punti</li>
+            <li><strong>Settebello (7 di denari):</strong> 1 punto (max 2)</li>
+            <li><strong>Otto di denari:</strong> 1 punto se hai anche il settebello (max 2)</li>
+            <li><strong>Più carte di denari:</strong> 1 punto</li>
+            <li><strong>Più carte totali:</strong> 1 punto</li>
+            <li><strong>Primiera:</strong> 1 punto</li>
+            <li><strong>Napola (1,2,3 di denari):</strong> 3 punti + 1 per ogni carta successiva fino al 10 (max 2 napole)</li>
+          </ul>
+
+          <p><strong>Vittoria:</strong> punti scelti dal creatore della stanza</p>
+        </div>
+      </div>
     </div>
 
     <!-- Torneo -->

@@ -17,8 +17,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- API Auth ---
 app.post('/api/registra', (req, res) => {
-  const { nome, email, password } = req.body;
-  res.json(db.registra(nome, email, password));
+  const { nome, email, password, citta } = req.body;
+  res.json(db.registra(nome, email, password, citta));
 });
 app.post('/api/login', (req, res) => {
   const { nome, password } = req.body;

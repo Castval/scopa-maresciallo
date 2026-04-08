@@ -945,10 +945,10 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
   if (d.passwordTemporanea) mostraCambioPassword(); else entraInLobby();
 });
 document.getElementById('btnRegistra').addEventListener('click', async () => {
-  const nome = document.getElementById('regNome').value.trim(), email = document.getElementById('regEmail').value.trim(), pwd = document.getElementById('regPassword').value;
-  if (!nome || !email || !pwd) { mostraMessaggioAuth('Compila tutti i campi'); return; }
+  const nome = document.getElementById('regNome').value.trim(), email = document.getElementById('regEmail').value.trim(), pwd = document.getElementById('regPassword').value, citta = document.getElementById('regCitta').value.trim();
+  if (!nome || !email || !pwd || !citta) { mostraMessaggioAuth('Compila tutti i campi'); return; }
   if (!document.getElementById('regConsensoPrv').checked) { mostraMessaggioAuth("Devi accettare l'informativa sulla privacy"); return; }
-  const d = await (await fetch('/api/registra', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, email, password: pwd }) })).json();
+  const d = await (await fetch('/api/registra', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, email, password: pwd, citta }) })).json();
   if (!d.ok) { mostraMessaggioAuth(d.errore); return; }
   mostraMessaggioAuth('Registrazione completata!', 'successo');
   document.getElementById('authRegistra').classList.add('nascosto'); document.getElementById('authLogin').classList.remove('nascosto');
